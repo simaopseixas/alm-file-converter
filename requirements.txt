@@ -5,3 +5,4 @@ zarr==2.18.3
 numcodecs==0.13.1
 imaris-ims-file-reader==0.1.8
 pyinstaller==6.19.0
+pyside6==6.9.2
