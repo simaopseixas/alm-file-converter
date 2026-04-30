@@ -27,17 +27,7 @@ python main.py
 
 ## Program usage
 
-1. Run the executable/code.
-
-2. Wait for the program to open.
-
-3. Select the folder containing the `.ims` files.
-
-4. Wait while the program automatically:
-
-   - Processes all `.ims` files.
-   - Saves the maximum intensity projections.
-   - Generates the `report.txt` file.
+1. Run the executable/code
 
 ---
 
