@@ -1,0 +1,7 @@
+numpy==2.2.6
+h5py==3.16.0
+tifffile==2025.5.10
+zarr==2.18.3
+numcodecs==0.13.1
+imaris-ims-file-reader==0.1.8
+pyinstaller==6.19.0
