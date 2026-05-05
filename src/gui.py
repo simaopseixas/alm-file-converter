@@ -36,7 +36,7 @@ class ConverterWidget(QWidget):
         self.tooltip_manager.attach_tooltip(
             self.batch_checkbox,
             "Batch processing will convert all files in a folder.\n" \
-            "Disable if you want to convert a single file",
+            "Disable if you want to convert a single file.",
         )
 
         self.convert_label = QLabel()
