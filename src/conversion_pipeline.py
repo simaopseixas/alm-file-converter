@@ -22,6 +22,10 @@ class conversion_pipeline:
     def conversion(
             output_file_format
     ):
+        """
+        Does the conversion algorithm, from folder choice, to reading as a zarr array, and writing as the intended format.
+        This function should then be called in the GUI to be properly used.
+        """
         
         READER_FUNCTIONS = {
             ".ims": file_reading_functions_class.read_ims_as_zarr,
