@@ -30,8 +30,14 @@ class conversion_pipeline:
             ".zarr": file_reading_functions_class.read_zarr
         }
 
-        # --------------------------------------------------------------
-        # Open the window to choose the folder and screen it for .ims files
+        files, n_files, folder_path = conversion_pipeline.folder_choice()
+
+        return files
+    
+    def folder_choice():
+        """
+        Open the window to choose the folder and screen it for .ims files
+        """
 
         are_there_microscopy_files = False
 
@@ -65,7 +71,8 @@ class conversion_pipeline:
         n_files = len(files)
         print(f"Found {n_files} microscopy files.")
 
-        return files
+        return files, n_files, folder_path
+        
 
 if __name__ == "__main__":
 
