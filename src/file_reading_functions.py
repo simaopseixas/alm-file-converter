@@ -17,15 +17,17 @@ import tifffile
 #################################################################
 # Functions
 
-class file_reading_functions:
+class file_reading_functions_class:
 
     def files_from_folder(
         folder_path: str | PathLike[str],
     ):
         """
-        Gets all files with the intende file formats that exist in the specified folder.
+        Gets all files with the intended file formats that exist in the specified folder.
         """
         folder = Path(folder_path)
+
+        print("Selected folder:", folder)
 
         file_extensions = (".ome.tiff", ".ims", ".lif", ".nd2", ".tiff", ".zvi")
         folder_extensions = (".ome.zarr", ".zarr")
