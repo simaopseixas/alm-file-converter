@@ -26,6 +26,8 @@ from multiview_stitcher import (
 )
 import numpy as np
 
+from readlif.reader import LifFile
+
 #################################################################
 # File Reading Functions
 
@@ -59,14 +61,16 @@ class file_reading_functions:
         return sorted(files)
 
 
-    def read_ims_as_zarr(
+    def read_ims_as_dask(
         file_path,
         resolution_level: int = 0,
     ):
         """
-        Open an Imaris .ims file as a read-only zarr array.
+        First opens an Imaris .ims file as a read-only zarr array.
+        Then converts it to a dask array.
         """
 
+        # Read the ims as a zarr
         ims_store = imaris_ims_file_reader.ims(
             str(file_path),
             ResolutionLevelLock=resolution_level,
@@ -74,6 +78,10 @@ class file_reading_functions:
         )
         img_array = zarr.open(ims_store, mode="r")
 
+        # Converts the zarr to dask
+        img_array = writing_functions.as_dask_array(img_array)
+
+        # Get voxel data
         z_size, y_size, x_size = ims_store.ims.resolution
 
         pixel_size_metadata = {
@@ -85,16 +93,22 @@ class file_reading_functions:
         return img_array, pixel_size_metadata
 
 
-    def read_ometiff_as_zarr(file_path):
+    def read_ometiff_as_dask(file_path):
         """
         Open an ome.tiff file as a read-only zarr array and read pixel sizes.
         """
 
+        # Read the ome.tiff as a zarr
         ometiff_store = tifffile.imread(file_path, aszarr=True)
         img_array = zarr.open(ometiff_store, mode="r")
 
+        # Convert the zarr to a dask array
+        img_array = writing_functions.as_dask_array(img_array)
+
+        # Get the axes of the data
         img_axes = "".join(img_array.attrs.get("_ARRAY_DIMENSIONS", ""))
 
+        # Get the voxel metadata
         if not img_axes:
             with tifffile.TiffFile(file_path) as tif:
                 series = tif.series[0]
@@ -112,17 +126,38 @@ class file_reading_functions:
 
         return img_array, pixel_size_metadata, img_axes
     
-    def read_lif(file_path):
+    def read_lif_as_dask(file_path, image_index=0):
         """
         Opens a .lif file for data reading
         """
 
-        
+        lif = LifFile(file_path)
+        img = lif.get_image(image_index)
+
+        img_array = img.as_array()
+
+        x_size, y_size, z_size, t_scale = img_array.info["scale"]
+        pixel_size_metadata = {
+            "z": z_size or 1,
+            "y": y_size or 1,
+            "x": x_size or 1,
+        }
+
+        dims = img_array.info["dims"]
+
+        if dims.m > 1:
+            img_axes = "MTCZYX"
+        else:
+            img_axes = "TCZYX"
+
+        return img_array, pixel_size_metadata, img_axes
+
+
     
-    
+    "STILL NEED TO UPDATE THIS ONE TO INCLUDE THE REST OF THE RETURNS"
     def read_zarr(file_path):
         """
-        Opens a zarr and an ome.zarr as a read-only zarr array
+        Opens a zarr or an ome.zarr as a read-only zarr array
         """
 
         return zarr.open(file_path, mode="r")
@@ -224,30 +259,30 @@ if __name__ == "__main__":
     print(2)
 
     input_path = Path(
-        r"C:\Users\simao\Desktop\teste\5.2 HIP6 dapi TH DCX 20x_2026-03-25_09.36.31_F04_max_int_proj.ome.tiff"
+        r"C:\Users\simao\Desktop\teste\MosaicoIIrregular_Leica.lif"
     )
 
-    if input_path.name.lower().endswith((".ome.tiff", ".ome.tif")):
-        output_path = input_path.with_name(Path(input_path.stem).stem + ".ome.zarr")
-    else:
-        output_path = input_path.with_suffix(".ome.zarr")
+    # if input_path.name.lower().endswith((".ome.tiff", ".ome.tif")):
+    #     output_path = input_path.with_name(Path(input_path.stem).stem + ".ome.zarr")
+    # else:
+    #     output_path = input_path.with_suffix(".ome.zarr")
 
 
     # Reads the ome.tiff
-    img_array, pixel_size_metadata, img_axes = file_reading_functions.read_ometiff_as_zarr(input_path)
+    img_array, pixel_size_metadata, img_axes = file_reading_functions.read_lif(input_path)
 
-    # Converts into a dask array
-    img_array = writing_functions.as_dask_array(img_array)
+    # # Converts into a dask array
+    # img_array = writing_functions.as_dask_array(img_array)
 
-    # Normalizes the axes onto TCZYX format
-    img_array = writing_functions.normalize_to_tczyx(img_array, img_axes=img_axes)
+    # # Normalizes the axes onto TCZYX format
+    # img_array = writing_functions.normalize_to_tczyx(img_array, img_axes=img_axes)
 
     print(img_array, pixel_size_metadata, img_array.shape)
 
     # Write the data into ome.zarr
-    writing_functions.write_ome_zarr(
-        output_path=output_path,
-        img_array=img_array,
-        img_dims=img_array.shape,
-        pixel_size_metadata=pixel_size_metadata,
-    )
+    # writing_functions.write_ome_zarr(
+    #     output_path=output_path,
+    #     img_array=img_array,
+    #     img_dims=img_array.shape,
+    #     pixel_size_metadata=pixel_size_metadata,
+    # )
