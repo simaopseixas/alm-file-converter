@@ -257,6 +257,11 @@ class writing_functions:
         Missing T, C, or Z dimensions are added with size 1.
         """
 
+        # If it has 6 dimensions, ignore this function, since it doesn't need any normalization
+        if img_axes == "MTCZYX":
+            return img_array
+
+
         img_axes = img_axes.upper()
         img_array = writing_functions.as_dask_array(img_array)
 
@@ -289,10 +294,53 @@ class writing_functions:
         # If the file that was read has 6 available dimensions, meaning Mosaics + TCZYX
         if img_axes == "MTCZYX":
 
+            print("it entered")
+
             # Get the dimensions
             M, T, C, Z, Y, X = img_dims
 
-            
+            # Create e new folder for the mosaics to be saved to
+            mosaic_folder = output_path.with_name(
+                output_path.name.removesuffix(".ome.zarr")
+            )
+
+            mosaic_folder.mkdir(parents=True, exist_ok=True)
+
+            for m in range(M):
+
+                if m > 5:
+                    break
+
+                # Change the name of the output mosaic filename
+                mosaic_output_path = mosaic_folder / (
+                    f"{output_path.name.removesuffix('.ome.zarr')}_mosaic_{m + 1}.ome.zarr"
+                )
+
+                sim = si_utils.get_sim_from_array(
+                    img_array[m,:,:,:,:,:],
+                    dims = ["t", "c", "z", "y", "x"],
+                    scale={
+                        "z": pixel_size_metadata["z"],
+                        "y": pixel_size_metadata["y"],
+                        "x": pixel_size_metadata["x"],
+                    },
+                    translation={
+                        "z": 0,
+                        "y": 0,
+                        "x": 0,
+                    },
+                    transform_key="stage_metadata",
+                    c_coords=[f"channel_{i}" for i in range(C)],
+                    t_coords=list(range(T)),
+                )
+                
+                ngff_utils.write_sim_to_ome_zarr(
+                    sim,
+                    output_zarr_url=str(mosaic_output_path),
+                    overwrite=True,
+                    ngff_version="0.4",
+                )
+
 
         # If there are only 5 dimensions, TCZYX
         else:
@@ -329,31 +377,26 @@ class writing_functions:
     
 if __name__ == "__main__":
 
-    print(2)
-
     input_path = Path(
         r"C:\Users\simao\Desktop\teste\MosaicoIIrregular_Leica.lif"
     )
 
-    # if input_path.name.lower().endswith((".ome.tiff", ".ome.tif")):
-    #     output_path = input_path.with_name(Path(input_path.stem).stem + ".ome.zarr")
-    # else:
-    #     output_path = input_path.with_suffix(".ome.zarr")
+    output_path = Path(
+        r"C:\Users\simao\Desktop\teste\MosaicoIIrregular_Leica.ome.zarr"
+    )
 
     img_array, pixel_size_metadata, img_axes = file_reading_functions.read_lif_as_dask(input_path)
 
-    # # Converts into a dask array
-    # img_array = writing_functions.as_dask_array(img_array)
-
-    # # Normalizes the axes onto TCZYX format
-    # img_array = writing_functions.normalize_to_tczyx(img_array, img_axes=img_axes)
+    # Normalizes the axes onto TCZYX format
+    img_array = writing_functions.normalize_to_tczyx(img_array, img_axes=img_axes)
 
     print(img_array.shape, pixel_size_metadata, img_axes)
 
     # Write the data into ome.zarr
-    # writing_functions.write_ome_zarr(
-    #     output_path=output_path,
-    #     img_array=img_array,
-    #     img_dims=img_array.shape,
-    #     pixel_size_metadata=pixel_size_metadata,
-    # )
+    writing_functions.write_ome_zarr(
+        output_path=output_path,
+        img_array=img_array,
+        img_dims=img_array.shape,
+        img_axes=img_axes,
+        pixel_size_metadata=pixel_size_metadata,
+    )
