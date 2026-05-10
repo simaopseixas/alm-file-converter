@@ -34,37 +34,9 @@ from readlif.reader import LifFile
 
 class file_reading_functions:
 
-    def files_from_folder(
-        folder_path: str | PathLike[str],
-    ):
-        """
-        Gets all files with the intended file formats that exist in the specified folder.
-        """
-        folder = Path(folder_path)
-
-        print("Selected folder:", folder)
-
-        file_extensions = (".ome.tiff", ".ims", ".lif", ".nd2", ".tiff", ".zvi")
-        folder_extensions = (".ome.zarr", ".zarr")
-
-        files = []
-
-        for file in folder.iterdir():
-
-            name = file.name.lower()
-
-            if file.is_file() and name.lower().endswith(file_extensions):
-                files.append(file)
-
-            elif file.is_dir() and name.endswith(folder_extensions):
-                files.append(file)
-
-        return sorted(files)
-
-
     def read_ims_as_dask(
         file_path,
-        resolution_level: int = 0,
+        resolution_level,
     ):
         """
         Opens an Imaris .ims file as a read-only zarr array.
@@ -236,19 +208,6 @@ class file_reading_functions:
 # File Writing Functions
 
 class writing_functions:
-
-    def create_converted_output_folder(input_folder):
-        """
-        Creates a "Converted Files" folder inside the input folder
-        Returns the created output folder path
-        """
-
-        input_folder = Path(input_folder)
-
-        output_folder = input_folder / "Converted Files"
-        output_folder.mkdir(parents=True, exist_ok=True)
-
-        return output_folder
         
 
     def as_dask_array(data):
@@ -389,28 +348,25 @@ class writing_functions:
 
 
     
-if __name__ == "__main__":
+# if __name__ == "__main__":
 
-    input_path = Path(
-        r"C:\Users\simao\Desktop\teste\MosaicoIIrregular_Leica.lif"
-    )
 
-    output_path = Path(
-        r"C:\Users\simao\Desktop\teste\MosaicoIIrregular_Leica.ome.zarr"
-    )
+    # output_path = Path(
+    #     r"C:\Users\simao\Desktop\teste\MosaicoIIrregular_Leica.ome.zarr"
+    # )
 
-    img_array, pixel_size_metadata, img_axes = file_reading_functions.read_lif_as_dask(input_path)
+    # img_array, pixel_size_metadata, img_axes = file_reading_functions.read_lif_as_dask(input_path)
 
-    # Normalizes the axes onto TCZYX format
-    img_array = writing_functions.normalize_to_tczyx(img_array, img_axes=img_axes)
+    # # Normalizes the axes onto TCZYX format
+    # img_array = writing_functions.normalize_to_tczyx(img_array, img_axes=img_axes)
 
-    print(img_array.shape, pixel_size_metadata, img_axes)
+    # print(img_array.shape, pixel_size_metadata, img_axes)
 
-    # Write the data into ome.zarr
-    writing_functions.write_ome_zarr(
-        output_path=output_path,
-        img_array=img_array,
-        img_dims=img_array.shape,
-        img_axes=img_axes,
-        pixel_size_metadata=pixel_size_metadata,
-    )
+    # # Write the data into ome.zarr
+    # writing_functions.write_ome_zarr(
+    #     output_path=output_path,
+    #     img_array=img_array,
+    #     img_dims=img_array.shape,
+    #     img_axes=img_axes,
+    #     pixel_size_metadata=pixel_size_metadata,
+    # )
