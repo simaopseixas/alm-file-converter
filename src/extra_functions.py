@@ -237,6 +237,20 @@ class file_reading_functions:
 
 class writing_functions:
 
+    def create_converted_output_folder(input_folder):
+        """
+        Creates a "Converted Files" folder inside the input folder
+        Returns the created output folder path
+        """
+
+        input_folder = Path(input_folder)
+
+        output_folder = input_folder / "Converted Files"
+        output_folder.mkdir(parents=True, exist_ok=True)
+
+        return output_folder
+        
+
     def as_dask_array(data):
         """
         Normalize zarr, dask, or numpy input into a dask array.
