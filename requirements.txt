@@ -7,3 +7,4 @@ imaris-ims-file-reader==0.1.8
 pyinstaller==6.19.0
 pyside6==6.9.2
 multiview-stitcher==0.1.37
+readlif==0.6.6

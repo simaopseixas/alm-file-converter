@@ -27,7 +27,7 @@ from multiview_stitcher import (
 import numpy as np
 
 #################################################################
-# Functions
+# File Reading Functions
 
 class file_reading_functions:
 
@@ -112,12 +112,23 @@ class file_reading_functions:
 
         return img_array, pixel_size_metadata, img_axes
     
+    def read_lif(file_path):
+        """
+        Opens a .lif file for data reading
+        """
+
+        
+    
+    
     def read_zarr(file_path):
         """
         Opens a zarr and an ome.zarr as a read-only zarr array
         """
 
         return zarr.open(file_path, mode="r")
+    
+#################################################################
+# File Writing Functions
 
 class writing_functions:
 
@@ -156,7 +167,6 @@ class writing_functions:
         return img_array
 
     
-
     def write_ome_zarr(
             output_path,
             img_array,
@@ -206,7 +216,6 @@ class writing_functions:
                 overwrite=True,
                 ngff_version="0.4",
             )
-
 
 
     
