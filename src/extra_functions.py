@@ -87,12 +87,30 @@ class file_reading_functions:
 
     def read_ometiff_as_zarr(file_path):
         """
-        Open an ome.tiff file as a read-only zarr array.
+        Open an ome.tiff file as a read-only zarr array and read pixel sizes.
         """
 
         ometiff_store = tifffile.imread(file_path, aszarr=True)
+        img_array = zarr.open(ometiff_store, mode="r")
 
-        return zarr.open(ometiff_store, mode='r')
+        img_axes = "".join(img_array.attrs.get("_ARRAY_DIMENSIONS", ""))
+
+        if not img_axes:
+            with tifffile.TiffFile(file_path) as tif:
+                series = tif.series[0]
+                img_axes = series.axes
+
+        with tifffile.TiffFile(file_path) as tif:
+            metadata = tifffile.xml2dict(tif.ome_metadata)
+            pixels = metadata["OME"]["Image"]["Pixels"]
+
+        pixel_size_metadata = {
+            "z": float(pixels.get("PhysicalSizeZ", 1)),
+            "y": float(pixels.get("PhysicalSizeY", 1)),
+            "x": float(pixels.get("PhysicalSizeX", 1)),
+        }
+
+        return img_array, pixel_size_metadata, img_axes
     
     def read_zarr(file_path):
         """
@@ -103,7 +121,7 @@ class file_reading_functions:
 
 class writing_functions:
 
-    def as_dask_array(data, chunks="auto"):
+    def as_dask_array(data):
         """
         Normalize zarr, dask, or numpy input into a dask array.
         """
@@ -116,6 +134,28 @@ class writing_functions:
 
         raise TypeError(f"Unsupported array type: {type(data)}")
     
+    
+    def normalize_to_tczyx(img_array, img_axes):
+        """
+        Normalize image array to TCZYX order.
+        Missing T, C, or Z dimensions are added with size 1.
+        """
+
+        img_axes = img_axes.upper()
+        img_array = writing_functions.as_dask_array(img_array)
+
+        for dim in "TCZYX":
+            if dim not in img_axes:
+                axis = "TCZYX".index(dim)
+                img_array = dask.array.expand_dims(img_array, axis=axis)
+                img_axes = img_axes[:axis] + dim + img_axes[axis:]
+
+        axis_order = [img_axes.index(dim) for dim in "TCZYX"]
+        img_array = dask.array.transpose(img_array, axis_order)
+
+        return img_array
+
+    
 
     def write_ome_zarr(
             output_path,
@@ -123,6 +163,9 @@ class writing_functions:
             img_dims,
             pixel_size_metadata
     ):
+        """
+        Function that takes a dask array as an input and writes its data into an .ome.zarr file
+        """
         
         output_path = Path(output_path)
         output_path.mkdir(parents=True, exist_ok=True)
@@ -133,30 +176,11 @@ class writing_functions:
             # Get the dimensions
             M, T, C, Z, Y, X = img_dims
 
-            # # If the file is read has having mosaics, but there is only one
-            # if M == 1:
-
-            #     msims = []
-            #     zarr_paths = []
-
-
-                
-            # # If there are more mosaics
-            # else:
-
-            #     msims = []
-            #     zarr_paths = []
-
-            #     # Write each tile as an ome.zarr
-            #     for itile in range(M):
-
         # If there are only 5 dimensions, TCZYX
         else:
 
             # Get the dimensions
             T, C, Z, Y, X = img_dims
-
-            img_array = writing_functions.as_dask_array(img_array)
 
             sim = si_utils.get_sim_from_array(
                 img_array,
@@ -191,37 +215,30 @@ if __name__ == "__main__":
     print(2)
 
     input_path = Path(
-        r"C:\Users\simao\Desktop\teste\5.2 HIP6 dapi TH DCX 20x_2026-03-25_09.36.31_F01.ims"
+        r"C:\Users\simao\Desktop\teste\5.2 HIP6 dapi TH DCX 20x_2026-03-25_09.36.31_F04_max_int_proj.ome.tiff"
     )
 
-    output_path = input_path.with_suffix(".ome.zarr")
+    if input_path.name.lower().endswith((".ome.tiff", ".ome.tif")):
+        output_path = input_path.with_name(Path(input_path.stem).stem + ".ome.zarr")
+    else:
+        output_path = input_path.with_suffix(".ome.zarr")
 
-    img_array, pixel_size_metadata = file_reading_functions.read_ims_as_zarr(input_path)
 
-    print(img_array.shape, pixel_size_metadata)
+    # Reads the ome.tiff
+    img_array, pixel_size_metadata, img_axes = file_reading_functions.read_ometiff_as_zarr(input_path)
 
-    # writing_functions.write_ome_zarr(
-    #     output_path=output_path,
-    #     img_array=img_array,
-    #     img_dims=img_array.shape,
-    #     pixel_size_metadata=pixel_size_metadata,
-    # )
+    # Converts into a dask array
+    img_array = writing_functions.as_dask_array(img_array)
 
-    # repo_root = Path(__file__).resolve().parent.parent
-    # folder = Path(r"C:\Users\simao\Desktop\teste")
-    # files = file_reading_functions.files_from_folder(folder)
+    # Normalizes the axes onto TCZYX format
+    img_array = writing_functions.normalize_to_tczyx(img_array, img_axes=img_axes)
 
-    # print(files)
+    print(img_array, pixel_size_metadata, img_array.shape)
 
-    # ome_tiff_files = [
-    #     file for file in files
-    #     if file.name.lower().endswith(".ome.zarr")
-    # ]
-
-    # print(ome_tiff_files)
-
-    # first_ome_tiff = ome_tiff_files[0]
-
-    # zarr_array = file_reading_functions.read_zarr(first_ome_tiff)
-
-    # print(zarr_array.shape)
+    # Write the data into ome.zarr
+    writing_functions.write_ome_zarr(
+        output_path=output_path,
+        img_array=img_array,
+        img_dims=img_array.shape,
+        pixel_size_metadata=pixel_size_metadata,
+    )
