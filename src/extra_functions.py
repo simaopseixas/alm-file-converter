@@ -11,8 +11,20 @@ from os import PathLike
 from pathlib import Path
 
 import zarr
-from imaris_ims_file_reader import ims
+import imaris_ims_file_reader
 import tifffile
+import dask.array
+from multiview_stitcher import spatial_image_utils as si_utils
+from multiview_stitcher import (
+    fusion,
+    io,
+    msi_utils,
+    vis_utils,
+    ngff_utils,
+    param_utils,
+    registration,
+)
+import numpy as np
 
 #################################################################
 # Functions
@@ -55,7 +67,11 @@ class file_reading_functions:
         Open an Imaris .ims file as a read-only zarr array.
         """
 
-        ims_store = ims(str(file_path), ResolutionLevelLock=resolution_level, aszarr=True)
+        ims_store = imaris_ims_file_reader.ims(
+            str(file_path),
+            ResolutionLevelLock=resolution_level,
+            aszarr=True,
+        )
         img_array = zarr.open(ims_store, mode="r")
 
         z_size, y_size, x_size = ims_store.ims.resolution
@@ -84,21 +100,6 @@ class file_reading_functions:
         """
 
         return zarr.open(file_path, mode="r")
-    
-    
-
-import dask.array as da
-from multiview_stitcher import spatial_image_utils as si_utils
-from multiview_stitcher import (
-    fusion,
-    io,
-    msi_utils,
-    vis_utils,
-    ngff_utils,
-    param_utils,
-    registration,
-)
-import numpy as np
 
 class writing_functions:
 
@@ -107,14 +108,11 @@ class writing_functions:
         Normalize zarr, dask, or numpy input into a dask array.
         """
 
-        if isinstance(data, da.Array):
+        if isinstance(data, dask.array.Array):
             return data
 
         if isinstance(data, zarr.Array):
-            return da.from_zarr(data)
-
-        if isinstance(data, np.ndarray):
-            return da.from_array(data, chunks=chunks)
+            return dask.array.from_zarr(data)
 
         raise TypeError(f"Unsupported array type: {type(data)}")
     
@@ -183,9 +181,6 @@ class writing_functions:
                 output_zarr_url=str(output_path),
                 overwrite=True,
                 ngff_version="0.4",
-                zarr_array_creation_kwargs={
-                    "chunks": (1, 1, min(10, Z), min(512, Y), min(512, X)),
-                },
             )
 
 
@@ -194,6 +189,23 @@ class writing_functions:
 if __name__ == "__main__":
 
     print(2)
+
+    input_path = Path(
+        r"C:\Users\simao\Desktop\teste\5.2 HIP6 dapi TH DCX 20x_2026-03-25_09.36.31_F01.ims"
+    )
+
+    output_path = input_path.with_suffix(".ome.zarr")
+
+    img_array, pixel_size_metadata = file_reading_functions.read_ims_as_zarr(input_path)
+
+    print(img_array.shape, pixel_size_metadata)
+
+    # writing_functions.write_ome_zarr(
+    #     output_path=output_path,
+    #     img_array=img_array,
+    #     img_dims=img_array.shape,
+    #     pixel_size_metadata=pixel_size_metadata,
+    # )
 
     # repo_root = Path(__file__).resolve().parent.parent
     # folder = Path(r"C:\Users\simao\Desktop\teste")
