@@ -90,7 +90,9 @@ class file_reading_functions:
             "x": x_size,
         }
 
-        return img_array, pixel_size_metadata
+        img_axes = "TCZYX"
+
+        return img_array, pixel_size_metadata, img_axes
 
 
     def read_ometiff_as_dask(file_path):
@@ -259,7 +261,7 @@ if __name__ == "__main__":
     print(2)
 
     input_path = Path(
-        r"C:\Users\simao\Desktop\teste\MosaicoIIrregular_Leica.lif"
+        r"C:\Users\simao\Desktop\teste\5.2 HIP6 dapi TH DCX 20x_2026-03-25_09.36.31_F01.ims"
     )
 
     # if input_path.name.lower().endswith((".ome.tiff", ".ome.tif")):
@@ -269,7 +271,7 @@ if __name__ == "__main__":
 
 
     # Reads the ome.tiff
-    img_array, pixel_size_metadata, img_axes = file_reading_functions.read_lif(input_path)
+    img_array, pixel_size_metadata, img_axes = file_reading_functions.read_ims_as_dask(input_path)
 
     # # Converts into a dask array
     # img_array = writing_functions.as_dask_array(img_array)
