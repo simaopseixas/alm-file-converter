@@ -27,13 +27,13 @@ class conversion_pipeline:
         """
         
         READER_FUNCTIONS = {
-            ".ims": file_reading_functions.read_ims_as_zarr,
-            ".ome.tiff": file_reading_functions.read_ometiff_as_zarr,
-            ".ome.zarr": file_reading_functions.read_zarr,
-            ".zarr": file_reading_functions.read_zarr
+            ".ims": file_reading_functions.read_ims_as_dask,
+            ".ome.tiff": file_reading_functions.read_ometiff_as_dask,
+            ".ome.zarr": file_reading_functions.read_omezarr_as_dask,
+            # ".zarr": file_reading_functions.read_zarr
         }
 
-        
+
 
         files, n_files, folder_path = conversion_pipeline.folder_choice()
 

@@ -66,7 +66,7 @@ class file_reading_functions:
         resolution_level: int = 0,
     ):
         """
-        First opens an Imaris .ims file as a read-only zarr array.
+        Opens an Imaris .ims file as a read-only zarr array.
         Then converts it to a dask array.
         """
 
@@ -97,7 +97,8 @@ class file_reading_functions:
 
     def read_ometiff_as_dask(file_path):
         """
-        Open an ome.tiff file as a read-only zarr array and read pixel sizes.
+        Opens an ome.tiff file as a read-only zarr array.
+        Then converts it to a dask array.
         """
 
         # Read the ome.tiff as a zarr
@@ -130,7 +131,8 @@ class file_reading_functions:
     
     def read_lif_as_dask(file_path, image_index=0):
         """
-        Opens a .lif file for data reading
+        Opens a Leica .lif file.
+        Then converts it to a dask array.
         """
 
         lif = LifFile(file_path)
@@ -157,12 +159,30 @@ class file_reading_functions:
 
     
     "STILL NEED TO UPDATE THIS ONE TO INCLUDE THE REST OF THE RETURNS"
-    def read_zarr(file_path):
+    def read_omezarr_as_dask(file_path):
         """
-        Opens a zarr or an ome.zarr as a read-only zarr array
+        Opens a zarr array in reading.
+        Then converts it to a dask array.
         """
 
-        return zarr.open(file_path, mode="r")
+        # Access the ome.zarr in reading mode
+        sim = ngff_utils.read_sim_from_ome_zarr(file_path, resolution_level=0)
+        img_array = sim.data
+
+        # Get the voxel size data
+        spacing = si_utils.get_spacing_from_sim(sim)
+        
+        pixel_size_metadata = {
+            "z": spacing.get("z", 1),
+            "y": spacing.get("y", 1),
+            "x": spacing.get("x", 1),
+        }
+
+        # Get the available axes of the data
+        img_axes = "".join(sim.dims).upper()
+
+
+        return img_array, pixel_size_metadata, img_axes
     
 #################################################################
 # File Writing Functions
@@ -261,7 +281,7 @@ if __name__ == "__main__":
     print(2)
 
     input_path = Path(
-        r"C:\Users\simao\Desktop\teste\5.2 HIP6 dapi TH DCX 20x_2026-03-25_09.36.31_F01.ims"
+        r"C:\Users\simao\Desktop\teste\5.2 HIP6 dapi TH DCX 20x_2026-03-25_09.36.31_F01.ome.zarr"
     )
 
     # if input_path.name.lower().endswith((".ome.tiff", ".ome.tif")):
@@ -271,7 +291,7 @@ if __name__ == "__main__":
 
 
     # Reads the ome.tiff
-    img_array, pixel_size_metadata, img_axes = file_reading_functions.read_ims_as_dask(input_path)
+    img_array, pixel_size_metadata, img_axes = file_reading_functions.read_omezarr_as_dask(input_path)
 
     # # Converts into a dask array
     # img_array = writing_functions.as_dask_array(img_array)

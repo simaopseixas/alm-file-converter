@@ -2,6 +2,7 @@ import sys
 from pathlib import Path
 
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -19,12 +20,13 @@ from tooltip_manager import CustomToolTipManager
 class ConverterWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.icons_dir = Path(__file__).resolve().parent / "icons"
+        self.attributes_dir = Path(__file__).resolve().parent / "attributes"
         self.tooltip_manager = CustomToolTipManager(self)
         self.setup_ui()
 
     def setup_ui(self):
         self.setWindowTitle("ALM File Converter")
+        self.setWindowIcon(QIcon(str(self.attributes_dir / "ALM.ico")))
         self.setFixedWidth(280)
 
         layout = QVBoxLayout(self)
@@ -48,7 +50,7 @@ class ConverterWidget(QWidget):
         self.tooltip_manager.attach_tooltip(
             self.batch_info_label,
             "This program currently has support for:\n" \
-            ".ims, .ome.tiff"
+            ".ims, .ome.tiff, ome.zarr"
         )
 
         self.convert_label = QLabel()
@@ -82,8 +84,8 @@ class ConverterWidget(QWidget):
         self.choose_button.setText("Choose folder" if batch_enabled else "Choose file")
 
     def apply_styles(self):
-        check_icon_path = (self.icons_dir / "check.png").as_posix()
-        arrow_icon_path = (self.icons_dir / "button_down.png").as_posix()
+        check_icon_path = (self.attributes_dir / "check.png").as_posix()
+        arrow_icon_path = (self.attributes_dir / "button_down.png").as_posix()
 
         self.setStyleSheet(
             f"""
@@ -199,6 +201,7 @@ class ConverterWidget(QWidget):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+    app.setWindowIcon(QIcon(str(Path(__file__).resolve().parent / "attributes" / "ALM.ico")))
     window = ConverterWidget()
     window.show()
     sys.exit(app.exec())
