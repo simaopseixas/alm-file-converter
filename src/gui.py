@@ -6,6 +6,7 @@ from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
     QComboBox,
+    QHBoxLayout,
     QLabel,
     QPushButton,
     QVBoxLayout,
@@ -33,10 +34,21 @@ class ConverterWidget(QWidget):
         self.batch_checkbox = QCheckBox("Batch Processing")
         self.batch_checkbox.setChecked(True)
         self.batch_checkbox.toggled.connect(self.update_button_text)
+
+        self.batch_info_label = QLabel("i")
+        self.batch_info_label.setObjectName("infoLabel")
+        self.batch_info_label.setFixedSize(16, 16)
+        self.batch_info_label.setAlignment(Qt.AlignCenter)
+        self.batch_info_label.setCursor(Qt.PointingHandCursor)
         self.tooltip_manager.attach_tooltip(
             self.batch_checkbox,
             "Batch processing will convert all files in a folder.\n" \
             "Disable if you want to convert a single file.",
+        )
+        self.tooltip_manager.attach_tooltip(
+            self.batch_info_label,
+            "This program currently has support for:\n" \
+            ".ims, .ome.tiff"
         )
 
         self.convert_label = QLabel()
@@ -47,7 +59,14 @@ class ConverterWidget(QWidget):
         self.choose_button = QPushButton()
         self.choose_button.setFixedHeight(34)
 
-        layout.addWidget(self.batch_checkbox, alignment=Qt.AlignLeft)
+        batch_row = QHBoxLayout()
+        batch_row.setContentsMargins(0, 0, 0, 0)
+        batch_row.setSpacing(6)
+        batch_row.addWidget(self.batch_checkbox)
+        batch_row.addStretch()
+        batch_row.addWidget(self.batch_info_label)
+
+        layout.addLayout(batch_row)
         layout.addWidget(self.convert_label, alignment=Qt.AlignLeft)
         layout.addWidget(self.format_combobox)
         layout.addWidget(self.choose_button)
@@ -75,6 +94,20 @@ class ConverterWidget(QWidget):
             QLabel {{
                 color: white;
                 font-size: 13px;
+            }}
+
+            QLabel#infoLabel {{
+                background-color: transparent;
+                color: #B7DDF2;
+                border: 1px solid #B7DDF2;
+                border-radius: 8px;
+                font-size: 11px;
+                font-weight: bold;
+            }}
+
+            QLabel#infoLabel:hover {{
+                color: white;
+                border: 1px solid white;
             }}
 
             QCheckBox {{

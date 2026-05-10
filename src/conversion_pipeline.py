@@ -33,6 +33,8 @@ class conversion_pipeline:
             ".zarr": file_reading_functions.read_zarr
         }
 
+        
+
         files, n_files, folder_path = conversion_pipeline.folder_choice()
 
         return files
