@@ -50,13 +50,13 @@ class ConverterWidget(QWidget):
         self.tooltip_manager.attach_tooltip(
             self.batch_info_label,
             "This program currently has support for:\n" \
-            ".ims, .ome.tiff, ome.zarr"
+            ".ims, .lif, .ome.tiff, ome.zarr"
         )
 
         self.convert_label = QLabel()
 
         self.format_combobox = QComboBox()
-        self.format_combobox.addItems(["tiff", "ome.tiff", "ome.zarr"])
+        self.format_combobox.addItems(["ome.zarr"])
 
         self.choose_button = QPushButton()
         self.choose_button.setFixedHeight(34)

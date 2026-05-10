@@ -22,6 +22,9 @@ from pathlib import Path
 
 class conversion_pipeline:
 
+    ##############################################
+    # Main function for conversion
+
     def conversion(
             output_file_format
     ):
@@ -29,19 +32,14 @@ class conversion_pipeline:
         Does the conversion algorithm, from folder choice, to reading as a zarr array, and writing as the intended format.
         This function should then be called in the GUI to be properly used.
         """
-        
-        READER_FUNCTIONS = {
-            ".ims": file_reading_functions.read_ims_as_dask,
-            ".ome.tiff": file_reading_functions.read_ometiff_as_dask,
-            ".ome.zarr": file_reading_functions.read_omezarr_as_dask,
-            ".lif": file_reading_functions.read_lif_as_dask,
-        }
-
 
 
         files, n_files, folder_path = conversion_pipeline.folder_choice()
 
         return files
+    
+    ##############################################
+    # Helper functions
 
     def files_from_folder(folder_path):
         """
@@ -121,9 +119,76 @@ class conversion_pipeline:
         output_folder.mkdir(parents=True, exist_ok=True)
 
         return output_folder
-        
+    
+    def create_output_file(output_folder, input_file_path, output_file_format):
+        """
+        Creates the output file path inside the "Converted Files" folder
+        """
+
+        output_folder = Path(output_folder)
+        input_file_path = Path(input_file_path)
+
+        if not output_file_format.startswith("."):
+            output_file_format = "." + output_file_format
+
+        input_name = input_file_path.name
+        lower_name = input_name.lower()
+
+        input_file_formats = (
+            ".ome.tiff",
+            ".ome.zarr",
+            ".ims",
+            ".lif",
+            ".tiff",
+            ".d2",
+            ".zvi",
+            ".zarr",
+        )
+
+        base_name = None
+
+        for input_file_format in input_file_formats:
+            if lower_name.endswith(input_file_format):
+                base_name = input_name[:-len(input_file_format)]
+                break
+
+        if base_name is None:
+            base_name = input_file_path.stem
+
+        output_file = output_folder / f"{base_name}{output_file_format}"
+
+        return output_file
+    
+    def get_reader_function(input_file_path):
+        """
+        Selects the correct function to read the file given its format
+        """
+
+        input_file_path = Path(input_file_path)
+        input_name = input_file_path.name.lower()
+
+        READER_FUNCTIONS = {
+            ".ims": file_reading_functions.read_ims_as_dask,
+            ".ome.tiff": file_reading_functions.read_ometiff_as_dask,
+            ".ome.zarr": file_reading_functions.read_omezarr_as_dask,
+            ".lif": file_reading_functions.read_lif_as_dask,
+        }
+
+        for input_file_format, reader_function in READER_FUNCTIONS.items():
+            if input_name.endswith(input_file_format):
+                return reader_function
+
+        raise ValueError(f"Unsupported file format: {input_file_path}")
+
 
 if __name__ == "__main__":
+
+    READER_FUNCTIONS = {
+        ".ims": file_reading_functions.read_ims_as_dask,
+        ".ome.tiff": file_reading_functions.read_ometiff_as_dask,
+        ".ome.zarr": file_reading_functions.read_omezarr_as_dask,
+        ".lif": file_reading_functions.read_lif_as_dask,
+    }
 
     # This will essentially be the code that will be in the "conversion" function
 
@@ -138,4 +203,8 @@ if __name__ == "__main__":
     print(output_folder)
 
     for input_file_path in input_file_paths:
-        print(input_file_path)
+        output_file = conversion_pipeline.create_output_file(output_folder, input_file_path, ".ome.zarr")
+
+        print(output_file)
+
+        img_array, pixel_size_metadata, img_axes = file_reading_functions.read_lif_as_dask(input_path)
