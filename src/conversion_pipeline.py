@@ -14,8 +14,7 @@ It does this by doing several steps:
 from tkinter import Tk
 from tkinter import filedialog
 
-
-from file_reading_functions import file_reading_functions_class
+from extra_functions import file_reading_functions
 
 class conversion_pipeline:
 
@@ -28,10 +27,10 @@ class conversion_pipeline:
         """
         
         READER_FUNCTIONS = {
-            ".ims": file_reading_functions_class.read_ims_as_zarr,
-            ".ome.tiff": file_reading_functions_class.read_ometiff_as_zarr,
-            ".ome.zarr": file_reading_functions_class.read_zarr,
-            ".zarr": file_reading_functions_class.read_zarr
+            ".ims": file_reading_functions.read_ims_as_zarr,
+            ".ome.tiff": file_reading_functions.read_ometiff_as_zarr,
+            ".ome.zarr": file_reading_functions.read_zarr,
+            ".zarr": file_reading_functions.read_zarr
         }
 
         files, n_files, folder_path = conversion_pipeline.folder_choice()
