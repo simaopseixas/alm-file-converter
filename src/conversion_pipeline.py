@@ -11,8 +11,7 @@ It does this by doing several steps:
 #################################################################
 # Imports
 
-from tkinter import Tk
-from tkinter import filedialog
+from PySide6.QtWidgets import QApplication, QFileDialog
 
 from extra_functions import file_reading_functions, writing_functions
 
@@ -75,31 +74,28 @@ class conversion_pipeline:
 
     ##############################################
     # Helper functions
-    
+
     def folder_choice():
         """
-        Open the window to choose the folder and screen it for .ims files
+        Open a PySide6 dialog to choose a folder and screen it for microscopy files.
         """
 
         are_there_microscopy_files = False
 
-        # Repeat the process if the user chooses a folder with no .ims files
+        app = QApplication.instance() or QApplication([])
+
         while are_there_microscopy_files == False:
 
-            root = Tk()
-            root.withdraw()
-            root.attributes('-topmost', True)  # makes dialog appear in front
+            folder_path = QFileDialog.getExistingDirectory(
+                None,
+                "Select Folder containing microscopy files",
+            )
 
-            # Open folder selection dialog
-            folder_path = filedialog.askdirectory()
-
-            # if the user cancels the dialog, exit the program
             if not folder_path:
                 print("No folder selected. Exiting the program.")
                 exit()
 
-            # Destroy root
-            root.destroy()
+            folder_path = Path(folder_path)
 
             files = conversion_pipeline.files_from_folder(folder_path)
 
@@ -109,12 +105,12 @@ class conversion_pipeline:
                 print("No microscopy files found in this folder.", flush=True)
                 print("Choose another folder.")
                 print()
-            
+
         n_files = len(files)
         print(f"Found {n_files} microscopy files.")
 
         return files, n_files, folder_path
-    
+
     
     def files_from_folder(folder_path):
         """
