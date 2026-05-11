@@ -10,6 +10,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QPushButton,
+    QSizePolicy,
     QVBoxLayout,
     QWidget,
 )
@@ -27,7 +28,8 @@ class ConverterWidget(QWidget):
     def setup_ui(self):
         self.setWindowTitle("ALM File Converter")
         self.setWindowIcon(QIcon(str(self.attributes_dir / "ALM.ico")))
-        self.setFixedWidth(280)
+        self.setMinimumWidth(280)
+        self.setMaximumWidth(280)
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(16, 16, 16, 16)
@@ -36,7 +38,6 @@ class ConverterWidget(QWidget):
         self.batch_checkbox = QCheckBox("Batch Processing")
         self.batch_checkbox.setChecked(True)
         self.batch_checkbox.toggled.connect(self.update_button_text)
-        self.batch_checkbox.setEnabled(False)
 
         self.batch_info_label = QLabel("i")
         self.batch_info_label.setObjectName("infoLabel")
@@ -62,6 +63,12 @@ class ConverterWidget(QWidget):
         self.choose_button = QPushButton()
         self.choose_button.setFixedHeight(34)
 
+        self.select_file_button = QPushButton("Select Microscopy File")
+        self.select_file_button.setFixedHeight(34)
+
+        self.select_zarr_button = QPushButton("Select OME-Zarr/Zarr folder")
+        self.select_zarr_button.setFixedHeight(34)
+
         batch_row = QHBoxLayout()
         batch_row.setContentsMargins(0, 0, 0, 0)
         batch_row.setSpacing(6)
@@ -69,10 +76,23 @@ class ConverterWidget(QWidget):
         batch_row.addStretch()
         batch_row.addWidget(self.batch_info_label)
 
+        single_input_layout = QVBoxLayout()
+        single_input_layout.setContentsMargins(0, 0, 0, 0)
+        single_input_layout.setSpacing(7)
+        single_input_layout.addWidget(self.select_file_button)
+        single_input_layout.addWidget(self.select_zarr_button)
+        self.single_input_widget = QWidget()
+        self.single_input_widget.setLayout(single_input_layout)
+        self.single_input_widget.setSizePolicy(
+            QSizePolicy.Preferred,
+            QSizePolicy.Maximum,
+        )
+
         layout.addLayout(batch_row)
         layout.addWidget(self.convert_label, alignment=Qt.AlignLeft)
         layout.addWidget(self.format_combobox)
         layout.addWidget(self.choose_button)
+        layout.addWidget(self.single_input_widget)
         layout.addStretch()
 
         self.update_button_text(self.batch_checkbox.isChecked())
@@ -82,7 +102,11 @@ class ConverterWidget(QWidget):
         self.convert_label.setText(
             "Convert files in the folder to:" if batch_enabled else "Convert file to:"
         )
-        self.choose_button.setText("Choose folder" if batch_enabled else "Choose file")
+        self.choose_button.setText("Choose folder")
+        self.choose_button.setVisible(batch_enabled)
+        self.single_input_widget.setVisible(not batch_enabled)
+        self.adjustSize()
+        self.setFixedHeight(self.sizeHint().height())
 
     def apply_styles(self):
         check_icon_path = (self.attributes_dir / "check.png").as_posix()

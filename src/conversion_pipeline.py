@@ -12,10 +12,7 @@ It does this by doing several steps:
 # Imports
 
 from PySide6.QtWidgets import QApplication, QFileDialog
-
 from extra_functions import file_reading_functions, writing_functions
-
-#from __future__ import annotations
 from pathlib import Path
 
 
