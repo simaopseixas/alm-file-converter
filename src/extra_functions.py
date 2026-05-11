@@ -343,28 +343,3 @@ class writing_functions:
                 overwrite=True,
                 ngff_version="0.4",
             )
-
-
-    
-# if __name__ == "__main__":
-
-
-    # output_path = Path(
-    #     r"C:\Users\simao\Desktop\teste\MosaicoIIrregular_Leica.ome.zarr"
-    # )
-
-    # img_array, pixel_size_metadata, img_axes = file_reading_functions.read_lif_as_dask(input_path)
-
-    # # Normalizes the axes onto TCZYX format
-    # img_array = writing_functions.normalize_to_tczyx(img_array, img_axes=img_axes)
-
-    # print(img_array.shape, pixel_size_metadata, img_axes)
-
-    # # Write the data into ome.zarr
-    # writing_functions.write_ome_zarr(
-    #     output_path=output_path,
-    #     img_array=img_array,
-    #     img_dims=img_array.shape,
-    #     img_axes=img_axes,
-    #     pixel_size_metadata=pixel_size_metadata,
-    # )
