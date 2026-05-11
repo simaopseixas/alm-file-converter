@@ -16,29 +16,57 @@ from PySide6.QtWidgets import (
 )
 
 from tooltip_manager import CustomToolTipManager
+from conversion_pipeline import file_conversion
 
 
 class ConverterWidget(QWidget):
+
+    #--------------------------------------------------
+    # Initialization
     def __init__(self, parent=None):
         super().__init__(parent)
         self.attributes_dir = Path(__file__).resolve().parent / "attributes"
         self.tooltip_manager = CustomToolTipManager(self)
         self.setup_ui()
 
+    #--------------------------------------------------
+    # Algorithm Functions
+
+    def run_batch_conversion(self):
+
+        # Verify the user choise for the output files
+        output_file_format = self.format_combobox.currentText()
+
+        # Initialize the conversion algorithm
+        file_conversion.batch_conversion(output_file_format)
+
+    #--------------------------------------------------
+    # UI
+
     def setup_ui(self):
+
+        #-----------------------------------------
+        # Initial setup for the window
         self.setWindowTitle("ALM File Converter")
         self.setWindowIcon(QIcon(str(self.attributes_dir / "ALM.ico")))
         self.setMinimumWidth(280)
         self.setMaximumWidth(280)
 
+        #-----------------------------------------
+        # Vertical layout definition
         layout = QVBoxLayout(self)
         layout.setContentsMargins(16, 16, 16, 16)
         layout.setSpacing(9)
 
+        #-----------------------------------------
+        # UI Elements
+
+        # Checkbox for the Batch Conversion
         self.batch_checkbox = QCheckBox("Batch Processing")
         self.batch_checkbox.setChecked(True)
         self.batch_checkbox.toggled.connect(self.update_button_text)
 
+        # Information Label
         self.batch_info_label = QLabel("i")
         self.batch_info_label.setObjectName("infoLabel")
         self.batch_info_label.setFixedSize(16, 16)
@@ -57,17 +85,25 @@ class ConverterWidget(QWidget):
 
         self.convert_label = QLabel()
 
+        # Output file format ComboBox
         self.format_combobox = QComboBox()
         self.format_combobox.addItems([".ome.zarr"])
 
+        # Batch Procesing Button
         self.choose_button = QPushButton()
         self.choose_button.setFixedHeight(34)
+        self.choose_button.clicked.connect(self.run_batch_conversion)
 
+        # Single Microscopy File Button
         self.select_file_button = QPushButton("Select Microscopy File")
         self.select_file_button.setFixedHeight(34)
 
+        # Single Zarr File Button
         self.select_zarr_button = QPushButton("Select OME-Zarr/Zarr folder")
         self.select_zarr_button.setFixedHeight(34)
+
+        #-----------------------------------------
+        # UI Layout Structure
 
         batch_row = QHBoxLayout()
         batch_row.setContentsMargins(0, 0, 0, 0)
@@ -75,6 +111,7 @@ class ConverterWidget(QWidget):
         batch_row.addWidget(self.batch_checkbox)
         batch_row.addStretch()
         batch_row.addWidget(self.batch_info_label)
+
 
         single_input_layout = QVBoxLayout()
         single_input_layout.setContentsMargins(0, 0, 0, 0)
@@ -88,6 +125,7 @@ class ConverterWidget(QWidget):
             QSizePolicy.Maximum,
         )
 
+        # Construction of the full UI
         layout.addLayout(batch_row)
         layout.addWidget(self.convert_label, alignment=Qt.AlignLeft)
         layout.addWidget(self.format_combobox)
@@ -97,6 +135,9 @@ class ConverterWidget(QWidget):
 
         self.update_button_text(self.batch_checkbox.isChecked())
         self.apply_styles()
+
+    #--------------------------------------------------
+    # Stylistic Functions
 
     def update_button_text(self, batch_enabled: bool):
         self.convert_label.setText(

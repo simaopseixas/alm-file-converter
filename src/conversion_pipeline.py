@@ -16,7 +16,7 @@ from extra_functions import file_reading_functions, writing_functions
 from pathlib import Path
 
 
-class conversion_pipeline:
+class file_conversion:
 
     ##############################################
     # Main function for conversion
@@ -30,23 +30,23 @@ class conversion_pipeline:
         """
 
         # Let the user choose its folder
-        input_file_paths, n_files, input_folder = conversion_pipeline.folder_choice()
+        input_file_paths, n_files, input_folder = file_conversion.folder_choice()
         print(f"Selected Folder: {input_folder}")
         
         # Get the output "Conversion Folder"
-        output_folder = conversion_pipeline.create_converted_output_folder(input_folder)
+        output_folder = file_conversion.create_converted_output_folder(input_folder)
         print(f"Conversion Folder: f{output_folder}")
 
         for input_file_path in input_file_paths:
 
-            output_file = conversion_pipeline.create_output_file_path(
+            output_file = file_conversion.create_output_file_path(
                 output_folder,
                 input_file_path,
                 output_file_format,
             )
 
             # Get the appropriate reader function for the specific input file format
-            reader_function = conversion_pipeline.get_reader_function(input_file_path)
+            reader_function = file_conversion.get_reader_function(input_file_path)
 
             # Apply the reader function to read the file
             img_array, pixel_size_metadata, img_axes = reader_function(input_file_path)
@@ -55,7 +55,7 @@ class conversion_pipeline:
             img_array = writing_functions.normalize_to_tczyx(img_array, img_axes)
 
             # Get the appropriate writer function for the specific file format that was chosen
-            writer_function = conversion_pipeline.get_writer_function(output_file_format)
+            writer_function = file_conversion.get_writer_function(output_file_format)
 
             # Apply the writer function to create the converted file
             writer_function(
@@ -94,7 +94,7 @@ class conversion_pipeline:
 
             folder_path = Path(folder_path)
 
-            files = conversion_pipeline.files_from_folder(folder_path)
+            files = file_conversion.files_from_folder(folder_path)
 
             if len(files) != 0:
                 are_there_microscopy_files = True
@@ -231,18 +231,18 @@ if __name__ == "__main__":
     #     r"C:\Users\simao\Desktop\teste"
     # )
 
-    # input_file_paths = conversion_pipeline.files_from_folder(input_path)
+    # input_file_paths = file_conversion.files_from_folder(input_path)
 
     # # Create an output folder
-    # output_folder = conversion_pipeline.create_converted_output_folder(input_path)
+    # output_folder = file_conversion.create_converted_output_folder(input_path)
     # print(output_folder)
 
     # for input_file_path in input_file_paths:
-    #     output_file = conversion_pipeline.create_output_file_path(output_folder, input_file_path, ".ome.zarr")
+    #     output_file = file_conversion.create_output_file_path(output_folder, input_file_path, ".ome.zarr")
 
     #     print(output_file)
 
-    #     reader_function = conversion_pipeline.get_reader_function(input_file_path)
+    #     reader_function = file_conversion.get_reader_function(input_file_path)
 
     #     img_array, pixel_size_metadata, img_axes = reader_function(input_file_path)
 
@@ -251,7 +251,7 @@ if __name__ == "__main__":
     #         img_axes,
     #     )
 
-    #     writer_function = conversion_pipeline.get_writer_function(".ome.zarr")
+    #     writer_function = file_conversion.get_writer_function(".ome.zarr")
 
     #     writer_function(
     #         output_file,
@@ -263,4 +263,4 @@ if __name__ == "__main__":
 
     #     print(f"Saved: {output_file}")
 
-    conversion_pipeline.batch_conversion(".ome.zarr")
+    file_conversion.batch_conversion(".ome.zarr")
