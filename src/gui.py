@@ -36,6 +36,7 @@ class ConverterWidget(QWidget):
         self.batch_checkbox = QCheckBox("Batch Processing")
         self.batch_checkbox.setChecked(True)
         self.batch_checkbox.toggled.connect(self.update_button_text)
+        self.batch_checkbox.setEnabled(False)
 
         self.batch_info_label = QLabel("i")
         self.batch_info_label.setObjectName("infoLabel")
@@ -50,13 +51,13 @@ class ConverterWidget(QWidget):
         self.tooltip_manager.attach_tooltip(
             self.batch_info_label,
             "This program currently has support for:\n" \
-            ".ims, .lif, .ome.tiff, ome.zarr"
+            ".ims, .lif, .ome.tiff, .ome.zarr"
         )
 
         self.convert_label = QLabel()
 
         self.format_combobox = QComboBox()
-        self.format_combobox.addItems(["ome.zarr"])
+        self.format_combobox.addItems([".ome.zarr"])
 
         self.choose_button = QPushButton()
         self.choose_button.setFixedHeight(34)
