@@ -14,7 +14,7 @@ It does this by doing several steps:
 from tkinter import Tk
 from tkinter import filedialog
 
-from extra_functions import file_reading_functions
+from extra_functions import file_reading_functions, writing_functions
 
 #from __future__ import annotations
 from pathlib import Path
@@ -207,4 +207,21 @@ if __name__ == "__main__":
 
         print(output_file)
 
-        img_array, pixel_size_metadata, img_axes = file_reading_functions.read_lif_as_dask(input_path)
+        reader_function = conversion_pipeline.get_reader_function(input_file_path)
+
+        img_array, pixel_size_metadata, img_axes = reader_function(input_file_path)
+
+        img_array = writing_functions.normalize_to_tczyx(
+            img_array,
+            img_axes,
+        )
+
+        writing_functions.write_ome_zarr(
+            output_file,
+            img_array,
+            img_array.shape,
+            img_axes,
+            pixel_size_metadata,
+        )
+
+        print(f"Saved: {output_file}")

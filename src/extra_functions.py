@@ -36,7 +36,7 @@ class file_reading_functions:
 
     def read_ims_as_dask(
         file_path,
-        resolution_level,
+        resolution_level=0,
     ):
         """
         Opens an Imaris .ims file as a read-only zarr array.
@@ -76,13 +76,13 @@ class file_reading_functions:
 
         # Read the ome.tiff as a zarr
         ometiff_store = tifffile.imread(file_path, aszarr=True)
-        img_array = zarr.open(ometiff_store, mode="r")
+        zarr_array = zarr.open(ometiff_store, mode="r")
 
         # Convert the zarr to a dask array
-        img_array = writing_functions.as_dask_array(img_array)
+        img_array = writing_functions.as_dask_array(zarr_array)
 
         # Get the axes of the data
-        img_axes = "".join(img_array.attrs.get("_ARRAY_DIMENSIONS", ""))
+        img_axes = "".join(zarr_array.attrs.get("_ARRAY_DIMENSIONS", ""))
 
         # Get the voxel metadata
         if not img_axes:
@@ -138,8 +138,6 @@ class file_reading_functions:
         Y = dims.y
         X = dims.x
         
-        print(T, C, Z, Y, X, M)
-
         sample = np.asarray(img.get_frame(z=0, t=0, c=0, m=0))
         dtype = sample.dtype
 
@@ -262,12 +260,9 @@ class writing_functions:
         """
         
         output_path = Path(output_path)
-        output_path.mkdir(parents=True, exist_ok=True)
         
         # If the file that was read has 6 available dimensions, meaning Mosaics + TCZYX
         if img_axes == "MTCZYX":
-
-            print("it entered")
 
             # Get the dimensions
             M, T, C, Z, Y, X = img_dims
@@ -281,7 +276,7 @@ class writing_functions:
 
             for m in range(M):
 
-                if m > 5:
+                if m + 1 > 1:
                     break
 
                 # Change the name of the output mosaic filename
@@ -317,6 +312,9 @@ class writing_functions:
 
         # If there are only 5 dimensions, TCZYX
         else:
+            
+            # Create simply the 5D file
+            output_path.parent.mkdir(parents=True, exist_ok=True)
 
             # Get the dimensions
             T, C, Z, Y, X = img_dims
