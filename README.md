@@ -83,7 +83,12 @@ python src/main.py
 
 To build the standalone executable, run:
 ```
-.\.venv\Scripts\pyinstaller.exe --noconfirm --clean "ALM File Converter.spec"
+.\.venv\Scripts\pyinstaller.exe --noconfirm --clean "standalone-executable.spec"
+```
+
+To build the folder executable, run:
+```
+.\.venv\Scripts\pyinstaller.exe --noconfirm --clean "folder-executable.spec"
 ```
 
 
