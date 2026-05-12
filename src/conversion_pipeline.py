@@ -15,6 +15,7 @@ from PySide6.QtWidgets import QApplication, QFileDialog
 from conversion_functions import file_reading_functions, writing_functions
 from pathlib import Path
 import traceback
+from datetime import datetime
 
 
 class file_conversion:
@@ -35,8 +36,9 @@ class file_conversion:
         print("------------------------------")
         print()
 
-        # Let the user choose its folder
-        input_file_paths, n_files, input_folder = file_conversion.folder_choice()
+        # If the folder was not yet chosen, let the user choose it
+        if input_file_paths is None or n_files is None or input_folder is None:
+            input_file_paths, n_files, input_folder = file_conversion.folder_choice()
 
         # If no folder was selected, cancel the conversion
         if input_folder is None:
@@ -119,10 +121,12 @@ class file_conversion:
         print("Conversion finished.")
         if failed_files == 0:
             print("All files were successfully converted.")
+            print()
         else:
             print(f"Successful Files: {successful_files}/{n_files}")
             print(f"Failed Files: {failed_files}/{n_files}")
             print("Some files failed to convert. Check the conversion report for details.")
+            print()
 
     #------------------------------------------
     # Single-File Conversion
@@ -133,9 +137,9 @@ class file_conversion:
         From file choice, reading as a dask array and writing as the intended format.
         """
 
-        # Let the user choose the file. The "if" statement is a safe-guard against the closing of the dialog and the main GUI
+        # If the file was not yet chosen, let the user choose it
         if input_file_path is None:
-            input_file_path = file_conversion.file_choice
+            input_file_path = file_conversion.file_choice()
 
         # If the user closes the dialog, cancel the conversion
         if input_file_path is None:
@@ -185,6 +189,7 @@ class file_conversion:
         except Exception as e:
             print(f"Failed to convert file: {input_file_path.name}")
             print(e)
+            print()
 
 
     def single_omezarr_conversion(output_file_format, input_file_path=None):
@@ -193,9 +198,9 @@ class file_conversion:
         From file choice, reading as a dask array and writing as the intended format.
         """
 
-        # Let the user choose the file. The "if" statement is a safe-guard against the closing of the dialog and the main GUI
+        # If the folder was not yet chosen, let the user choose it
         if input_file_path is None:
-            input_file_path = file_conversion.zarr_choice
+            input_file_path = file_conversion.zarr_choice()
 
         # If the user closes the dialog, cancel the conversion
         if input_file_path is None:
@@ -245,6 +250,7 @@ class file_conversion:
         except Exception as e:
             print(f"Failed to convert file: {input_file_path.name}")
             print(e)
+            print()
 
 
     ##############################################
@@ -474,7 +480,8 @@ class file_conversion:
             return
         
         # Create the report file
-        report_file = Path(output_folder) / "conversion_report.txt"
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        report_file = Path(output_folder) / f"conversion_report_{timestamp}.txt"
 
         with open(report_file, "w", encoding="utf-8") as report:
             report.write("Conversion Report\n")

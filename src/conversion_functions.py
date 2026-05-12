@@ -7,7 +7,6 @@ This file has various functions to read data from each file format either as a z
 
 from __future__ import annotations
 
-from os import PathLike
 from pathlib import Path
 
 import zarr
@@ -16,18 +15,13 @@ import tifffile
 import dask.array
 import dask
 from multiview_stitcher import spatial_image_utils as si_utils
-from multiview_stitcher import (
-    fusion,
-    io,
-    msi_utils,
-    vis_utils,
-    ngff_utils,
-    param_utils,
-    registration,
-)
+from multiview_stitcher import ngff_utils
 import numpy as np
 
 from readlif.reader import LifFile
+
+import contextlib
+import os
 
 #################################################################
 # File Reading Functions
@@ -205,9 +199,6 @@ class file_reading_functions:
 #################################################################
 # File Writing Functions
 
-import contextlib
-import os
-
 class writing_functions:
         
     @contextlib.contextmanager
@@ -287,8 +278,9 @@ class writing_functions:
 
             for m in range(M):
 
-                if m + 1 > 1:
-                    break
+                # for testing convenience
+                # if m + 1 > 1:
+                #     break
 
                 # Change the name of the output mosaic filename
                 mosaic_output_path = mosaic_folder / (
