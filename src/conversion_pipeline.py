@@ -12,7 +12,7 @@ It does this by doing several steps:
 # Imports
 
 from PySide6.QtWidgets import QApplication, QFileDialog
-from extra_functions import file_reading_functions, writing_functions
+from conversion_functions import file_reading_functions, writing_functions
 from pathlib import Path
 
 
@@ -31,6 +31,11 @@ class file_conversion:
 
         # Let the user choose its folder
         input_file_paths, n_files, input_folder = file_conversion.folder_choice()
+
+        # If no folder was selected, cancel the conversion
+        if input_folder is None:
+            return
+        
         print(f"Selected Folder: {input_folder}")
         
         # Get the output "Conversion Folder"
@@ -77,25 +82,32 @@ class file_conversion:
         Open a PySide6 dialog to choose a folder and screen it for microscopy files.
         """
 
+        # Start a bool variable to detect the presence of microscopy files
         are_there_microscopy_files = False
 
         app = QApplication.instance() or QApplication([])
 
+        # Start a loop for file detection
         while are_there_microscopy_files == False:
 
+            # Open a window to select a folder
             folder_path = QFileDialog.getExistingDirectory(
                 None,
                 "Select Folder containing microscopy files",
             )
 
+            # If no folder was selected, simply cancel the conversion
             if not folder_path:
-                print("No folder selected. Exiting the program.")
-                exit()
+                print("No folder selected.")
+                return [], 0, None
 
+            # Introduce the Path variable
             folder_path = Path(folder_path)
 
+            # Compute the microscopy files that are present
             files = file_conversion.files_from_folder(folder_path)
 
+            # Check if there are actually any microscopy files
             if len(files) != 0:
                 are_there_microscopy_files = True
             else:

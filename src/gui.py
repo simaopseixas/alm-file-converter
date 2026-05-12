@@ -37,8 +37,15 @@ class ConverterWidget(QWidget):
         # Verify the user choise for the output files
         output_file_format = self.format_combobox.currentText()
 
+        # Disable the GUI window while the conversion happens
+        self.setEnabled(False)
+        QApplication.processEvents()
+
         # Initialize the conversion algorithm
-        file_conversion.batch_conversion(output_file_format)
+        try:
+            file_conversion.batch_conversion(output_file_format)
+        finally:
+            self.setEnabled(True)
 
     #--------------------------------------------------
     # UI
@@ -143,7 +150,7 @@ class ConverterWidget(QWidget):
         self.convert_label.setText(
             "Convert files in the folder to:" if batch_enabled else "Convert file to:"
         )
-        self.choose_button.setText("Choose folder")
+        self.choose_button.setText("Select folder")
         self.choose_button.setVisible(batch_enabled)
         self.single_input_widget.setVisible(not batch_enabled)
         self.adjustSize()
