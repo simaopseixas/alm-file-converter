@@ -367,18 +367,3 @@ class ConverterWidget(QWidget):
             }}
             """
         )
-
-
-if __name__ == "__main__":
-
-    print("ALM Microscopy File Converter")
-    print("==============================")
-    print()
-
-    app = QApplication(sys.argv)
-    app.setWindowIcon(QIcon(str(Path(__file__).resolve().parent / "attributes" / "ALM.ico")))
-    window = ConverterWidget()
-    window.show()
-    sys.exit(app.exec())
-
-
