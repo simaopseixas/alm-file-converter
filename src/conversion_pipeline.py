@@ -22,16 +22,77 @@ class file_conversion:
     ##############################################
     # Main function for conversion
 
-    def batch_conversion(
-            output_file_format
-    ):
+    def single_file_conversion(output_file_format):
         """
-        Does the conversion algorithm, from folder choice, to reading as a zarr array, and writing as the intended format.
-        This function should then be called in the GUI to be properly used.
+        Performs the conversion algorithm for a single file.
+        From file choice, reading as a dask array and writing as the intended format.
         """
 
         print("ALM Microscopy File Converter")
         print("==============================")
+        print()
+
+        # Let the user choose the file
+        input_file_path = file_conversion.file_choice()
+
+        # If no file is selected, cancel the conversion
+        if input_file_path is None:
+            return
+        
+        print(f"Selected File: {input_file_path.name}")
+
+        # Get the output "Conversion Folder"
+        output_folder = file_conversion.create_converted_output_folder(input_file_path.parent)
+
+        try:
+            # Create the appropriate file path
+            output_file = file_conversion.create_output_file_path(output_folder, input_file_path, output_file_format)
+
+            # Get the appropriate reader function for the specific input file format
+            reader_function = file_conversion.get_reader_function(input_file_path)
+
+            # Suppress unnecessary reading prints:
+            with writing_functions.suppress_console_output():
+                # Apply the reader function to read the file
+                img_array, pixel_size_metadata, img_axes = reader_function(input_file_path)
+
+            # Normalize the axes of the data
+            img_array = writing_functions.normalize_to_tczyx(img_array, img_axes)
+
+            # Get the appropriate writer function for the specific file format that was chosen
+            writer_function = file_conversion.get_writer_function(output_file_format)
+
+            # Suppress unncessessary writing prints:
+            # Apply the suppress printing function
+            with writing_functions.suppress_console_output():
+
+                # Apply the writer function to create the converted file
+                writer_function(
+                    output_file,
+                    img_array,
+                    img_array.shape,
+                    img_axes,
+                    pixel_size_metadata,
+                )
+
+            print(f"Saved File: {output_file.name}")
+
+
+        except Exception:
+            print(f"Failed to convert file: {input_file_path.name}")
+
+
+
+
+    def batch_conversion(output_file_format):
+        """
+        Performs the conversion algorithm for a batched conversion
+        From folder choice, reading as a dask array, and writing as the intended format.
+        """
+
+        print("ALM Microscopy File Converter")
+        print("==============================")
+        print()
 
         # Let the user choose its folder
         input_file_paths, n_files, input_folder = file_conversion.folder_choice()
@@ -41,6 +102,7 @@ class file_conversion:
             return
         
         print(f"Selected Folder: {input_folder}")
+        print(f"Found {n_files} Microscopy Files.")
         
         # Get the output "Conversion Folder"
         output_folder = file_conversion.create_converted_output_folder(input_folder)
@@ -58,16 +120,13 @@ class file_conversion:
                 print()
                 print(f"Converting file {file_index}/{n_files}: {input_file_path.name}")
 
-                output_file = file_conversion.create_output_file_path(
-                    output_folder,
-                    input_file_path,
-                    output_file_format,
-                )
+                # Create the appropriate file path
+                output_file = file_conversion.create_output_file_path(output_folder, input_file_path, output_file_format)
 
                 # Get the appropriate reader function for the specific input file format
                 reader_function = file_conversion.get_reader_function(input_file_path)
 
-                # Suppress unncessessary reading prints:
+                # Suppress unnecassary reading prints:
                 with writing_functions.suppress_console_output():
                     # Apply the reader function to read the file
                     img_array, pixel_size_metadata, img_axes = reader_function(input_file_path)
@@ -91,7 +150,7 @@ class file_conversion:
                         pixel_size_metadata,
                     )
 
-                print(f"Saved file: {output_file.name}")
+                print(f"Saved File: {output_file.name}")
 
                 successful_files += 1
 
@@ -122,12 +181,33 @@ class file_conversion:
         else:
             print(f"Successful Files: {successful_files}/{n_files}")
             print(f"Failed Files: {failed_files}/{n_files}")
+            print("Some files failed to convert. Check the conversion report for details.")
 
 
 
 
     ##############################################
     # Helper functions
+
+    def file_choice():
+        """
+        Open a dialog to choose a single microscopy file.
+        """
+
+        app = QApplication.instance() or QApplication([])
+
+        file_path, _ = QFileDialog.getOpenFileName(
+            None,
+            "Select Microscopy File",
+            "",
+            "Microscopy files (*.ims *.lif *.ome.tiff)"
+        )
+
+        if not file_path:
+            print("No file selected.")
+            return None
+        
+        return Path(file_path)
 
     def folder_choice():
         """
@@ -168,7 +248,6 @@ class file_conversion:
                 print()
 
         n_files = len(files)
-        print(f"Found {n_files} Microscopy Files.")
 
         return files, n_files, folder_path
 
@@ -314,3 +393,7 @@ class file_conversion:
 
         print(f"Conversion report saved to: {report_file}")
 
+
+
+if __name__ == "__main__":
+    file_conversion.single_file_conversion(".ome.zarr")
