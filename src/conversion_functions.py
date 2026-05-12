@@ -205,8 +205,19 @@ class file_reading_functions:
 #################################################################
 # File Writing Functions
 
+import contextlib
+import os
+
 class writing_functions:
         
+    @contextlib.contextmanager
+    def suppress_console_output():
+        """
+        Function to suppress noisy information. Mainly for the .ims reading
+        """
+        with open(os.devnull, "w") as devnull:
+            with contextlib.redirect_stdout(devnull), contextlib.redirect_stderr(devnull):
+                yield
 
     def as_dask_array(data):
         """

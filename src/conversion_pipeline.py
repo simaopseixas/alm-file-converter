@@ -40,7 +40,6 @@ class file_conversion:
         
         # Get the output "Conversion Folder"
         output_folder = file_conversion.create_converted_output_folder(input_folder)
-        print(f"Conversion Folder: f{output_folder}")
 
         for input_file_path in input_file_paths:
 
@@ -53,23 +52,27 @@ class file_conversion:
             # Get the appropriate reader function for the specific input file format
             reader_function = file_conversion.get_reader_function(input_file_path)
 
-            # Apply the reader function to read the file
-            img_array, pixel_size_metadata, img_axes = reader_function(input_file_path)
+            # Suppress unncessessary writing prints:
+            # Apply the suppress printing function
+            with writing_functions.suppress_console_output():
 
-            # Normalize the axes of the data
-            img_array = writing_functions.normalize_to_tczyx(img_array, img_axes)
+                # Apply the reader function to read the file
+                img_array, pixel_size_metadata, img_axes = reader_function(input_file_path)
 
-            # Get the appropriate writer function for the specific file format that was chosen
-            writer_function = file_conversion.get_writer_function(output_file_format)
+                # Normalize the axes of the data
+                img_array = writing_functions.normalize_to_tczyx(img_array, img_axes)
 
-            # Apply the writer function to create the converted file
-            writer_function(
-                output_file,
-                img_array,
-                img_array.shape,
-                img_axes,
-                pixel_size_metadata,
-            )
+                # Get the appropriate writer function for the specific file format that was chosen
+                writer_function = file_conversion.get_writer_function(output_file_format)
+
+                # Apply the writer function to create the converted file
+                writer_function(
+                    output_file,
+                    img_array,
+                    img_array.shape,
+                    img_axes,
+                    pixel_size_metadata,
+                )
 
             print(f"Saved file: {output_file}")
 
