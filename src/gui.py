@@ -1,7 +1,7 @@
 import sys
 from pathlib import Path
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QSettings
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
     QApplication,
@@ -27,6 +27,7 @@ class ConverterWidget(QWidget):
         super().__init__(parent)
         self.attributes_dir = Path(__file__).resolve().parent / "attributes"
         self.tooltip_manager = CustomToolTipManager(self)
+        self.settings = QSettings("i3S", "ALM File Converter")
         self.setup_ui()
 
     #--------------------------------------------------
@@ -96,8 +97,11 @@ class ConverterWidget(QWidget):
 
         # Checkbox for the Batch Conversion
         self.batch_checkbox = QCheckBox("Batch Processing")
-        self.batch_checkbox.setChecked(True)
+            # add the setting saving of the checkbox
+        batch_enabled = self.settings.value("batch_processing_enabled", True, type=bool)
+        self.batch_checkbox.setChecked(batch_enabled)
         self.batch_checkbox.toggled.connect(self.update_button_text)
+        self.batch_checkbox.toggled.connect(self.save_batch_setting)
 
         # Information Label
         self.batch_info_label = QLabel("i")
@@ -181,7 +185,17 @@ class ConverterWidget(QWidget):
     #--------------------------------------------------
     # Stylistic Functions
 
+    def save_batch_setting(self, checked):
+        """
+        Updates the checkbox enabled value in the computer settings
+        to save it for the next session of the program
+        """
+        self.settings.setValue("batch_processing_enabled", checked)
+
     def update_button_text(self, batch_enabled: bool):
+        """
+        Changes the appearance of the GUI after the enabling/disabling of the checkbox
+        """
         self.convert_label.setText(
             "Convert files in the folder to:" if batch_enabled else "Convert file to:"
         )
@@ -192,6 +206,9 @@ class ConverterWidget(QWidget):
         self.setFixedHeight(self.sizeHint().height())
 
     def apply_styles(self):
+        """
+        Applies the initial styling of the GUI
+        """
         check_icon_path = (self.attributes_dir / "check.png").as_posix()
         arrow_icon_path = (self.attributes_dir / "button_down.png").as_posix()
 
@@ -317,7 +334,7 @@ if __name__ == "__main__":
     print("ALM Microscopy File Converter")
     print("==============================")
     print()
-    
+
     app = QApplication(sys.argv)
     app.setWindowIcon(QIcon(str(Path(__file__).resolve().parent / "attributes" / "ALM.ico")))
     window = ConverterWidget()
