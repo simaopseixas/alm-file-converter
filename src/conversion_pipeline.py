@@ -14,6 +14,7 @@ It does this by doing several steps:
 from PySide6.QtWidgets import QApplication, QFileDialog
 from conversion_functions import file_reading_functions, writing_functions
 from pathlib import Path
+import traceback
 
 
 class file_conversion:
@@ -29,6 +30,9 @@ class file_conversion:
         This function should then be called in the GUI to be properly used.
         """
 
+        print("ALM Microscopy File Converter")
+        print("==============================")
+
         # Let the user choose its folder
         input_file_paths, n_files, input_folder = file_conversion.folder_choice()
 
@@ -41,12 +45,18 @@ class file_conversion:
         # Get the output "Conversion Folder"
         output_folder = file_conversion.create_converted_output_folder(input_folder)
 
-        for input_file_path in input_file_paths:
+        # Report metrics
+        successful_files = 0
+        failed_files = 0
+        failed_files_report = []
+
+        for file_index, input_file_path in enumerate(input_file_paths, start=1):
 
             # try/except to continue the loop even if there is any error
             try:
 
-                print(f"Converting file: {input_file_path.name}")
+                print()
+                print(f"Converting file {file_index}/{n_files}: {input_file_path.name}")
 
                 output_file = file_conversion.create_output_file_path(
                     output_folder,
@@ -57,9 +67,10 @@ class file_conversion:
                 # Get the appropriate reader function for the specific input file format
                 reader_function = file_conversion.get_reader_function(input_file_path)
 
-
-                # Apply the reader function to read the file
-                img_array, pixel_size_metadata, img_axes = reader_function(input_file_path)
+                # Suppress unncessessary reading prints:
+                with writing_functions.suppress_console_output():
+                    # Apply the reader function to read the file
+                    img_array, pixel_size_metadata, img_axes = reader_function(input_file_path)
 
                 # Normalize the axes of the data
                 img_array = writing_functions.normalize_to_tczyx(img_array, img_axes)
@@ -81,12 +92,38 @@ class file_conversion:
                     )
 
                 print(f"Saved file: {output_file.name}")
-                print()
+
+                successful_files += 1
 
             except Exception as error:
                 print(f"Failed to convert file: {input_file_path.name}")
                 print(f"Skipping to next file.")
                 print()
+
+                # Add report information
+                failed_files += 1
+                failed_files_report.append({
+                    "file": input_file_path.name,
+                    "error": traceback.format_exc()
+                })
+
+        file_conversion.create_report(
+            output_folder,
+            n_files,
+            successful_files,
+            failed_files,
+            failed_files_report,
+        )
+
+        print()
+        print("Conversion finished.")
+        if failed_files == 0:
+            print("All files were successfully converted.")
+        else:
+            print(f"Successful Files: {successful_files}/{n_files}")
+            print(f"Failed Files: {failed_files}/{n_files}")
+
+
 
 
     ##############################################
@@ -131,7 +168,7 @@ class file_conversion:
                 print()
 
         n_files = len(files)
-        print(f"Found {n_files} microscopy files.")
+        print(f"Found {n_files} Microscopy Files.")
 
         return files, n_files, folder_path
 
@@ -248,3 +285,32 @@ class file_conversion:
                 return WRITER_FUNCTIONS[output_file_format]
         
         raise ValueError(f"Unsupported output file format: {output_file_format}")
+    
+    def create_report(output_folder, n_files, successful_files, failed_files, failed_file_reports):
+        """
+        Creates a report listing the errors for failed files
+        """
+
+        # Immediately leave this function if there are no failed files
+        if failed_files == 0:
+            return
+        
+        # Create the report file
+        report_file = Path(output_folder) / "conversion_report.txt"
+
+        with open(report_file, "w", encoding="utf-8") as report:
+            report.write("Conversion Report\n")
+            report.write("=================\n\n")
+            report.write(f"Total files: {n_files}\n")
+            report.write(f"Successful files: {successful_files}\n")
+            report.write(f"Failed files: {failed_files}\n\n")
+
+            report.write("Failed file details:\n")
+            report.write("--------------------\n")
+
+            for failed_file in failed_file_reports:
+                report.write(f"File: {failed_file['file']}\n")
+                report.write(f"Error: {failed_file['error']}\n\n")
+
+        print(f"Conversion report saved to: {report_file}")
+

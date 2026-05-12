@@ -63,7 +63,7 @@ class ConverterWidget(QWidget):
         #-----------------------------------------
         # Vertical layout definition
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(16, 16, 16, 16)
+        layout.setContentsMargins(16, 16, 16, 8)
         layout.setSpacing(9)
 
         #-----------------------------------------
@@ -92,6 +92,10 @@ class ConverterWidget(QWidget):
         )
 
         self.convert_label = QLabel()
+
+        self.author_label = QLabel("Made by: Simão Seixas, i3S")
+        self.author_label.setObjectName("authorLabel")
+        self.author_label.setAlignment(Qt.AlignRight)
 
         # Output file format ComboBox
         self.format_combobox = QComboBox()
@@ -140,6 +144,8 @@ class ConverterWidget(QWidget):
         layout.addWidget(self.choose_button)
         layout.addWidget(self.single_input_widget)
         layout.addStretch()
+        layout.addSpacing(5)
+        layout.addWidget(self.author_label, alignment=Qt.AlignRight)
 
         self.update_button_text(self.batch_checkbox.isChecked())
         self.apply_styles()
@@ -184,6 +190,11 @@ class ConverterWidget(QWidget):
             QLabel#infoLabel:hover {{
                 color: white;
                 border: 1px solid white;
+            }}
+
+            QLabel#authorLabel {{
+                color: #9A9A9A;
+                font-size: 9px;
             }}
 
             QCheckBox {{

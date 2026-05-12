@@ -9,3 +9,5 @@ __pycache__/
 build/
 dist/
 onfirm --clean "ALM File Converter.spec"
+
+teste_conversion/
