@@ -155,7 +155,7 @@ class ConverterWidget(QWidget):
         self.tooltip_manager.attach_tooltip(
             self.batch_info_label,
             "This program currently has support for:\n" \
-            ".ims, .lif, .ome.tiff, .ome.zarr"
+            ".ims, .lif, .ome.tiff, .ome.zarr, .zarr"
         )
 
         self.convert_label = QLabel()
