@@ -43,18 +43,20 @@ class file_conversion:
 
         for input_file_path in input_file_paths:
 
-            output_file = file_conversion.create_output_file_path(
-                output_folder,
-                input_file_path,
-                output_file_format,
-            )
+            # try/except to continue the loop even if there is any error
+            try:
 
-            # Get the appropriate reader function for the specific input file format
-            reader_function = file_conversion.get_reader_function(input_file_path)
+                print(f"Converting file: {input_file_path.name}")
 
-            # Suppress unncessessary writing prints:
-            # Apply the suppress printing function
-            with writing_functions.suppress_console_output():
+                output_file = file_conversion.create_output_file_path(
+                    output_folder,
+                    input_file_path,
+                    output_file_format,
+                )
+
+                # Get the appropriate reader function for the specific input file format
+                reader_function = file_conversion.get_reader_function(input_file_path)
+
 
                 # Apply the reader function to read the file
                 img_array, pixel_size_metadata, img_axes = reader_function(input_file_path)
@@ -65,16 +67,26 @@ class file_conversion:
                 # Get the appropriate writer function for the specific file format that was chosen
                 writer_function = file_conversion.get_writer_function(output_file_format)
 
-                # Apply the writer function to create the converted file
-                writer_function(
-                    output_file,
-                    img_array,
-                    img_array.shape,
-                    img_axes,
-                    pixel_size_metadata,
-                )
+                # Suppress unncessessary writing prints:
+                # Apply the suppress printing function
+                with writing_functions.suppress_console_output():
 
-            print(f"Saved file: {output_file}")
+                    # Apply the writer function to create the converted file
+                    writer_function(
+                        output_file,
+                        img_array,
+                        img_array.shape,
+                        img_axes,
+                        pixel_size_metadata,
+                    )
+
+                print(f"Saved file: {output_file.name}")
+                print()
+
+            except Exception as error:
+                print(f"Failed to convert file: {input_file_path.name}")
+                print(f"Skipping to next file.")
+                print()
 
 
     ##############################################

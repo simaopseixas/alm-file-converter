@@ -38,15 +38,16 @@ class ConverterWidget(QWidget):
         output_file_format = self.format_combobox.currentText()
 
         # Disable the GUI window while the conversion happens
-        self.setEnabled(False)
+        self.hide()
         QApplication.processEvents()
 
         # Initialize the conversion algorithm
         try:
             file_conversion.batch_conversion(output_file_format)
         finally:
-            self.setEnabled(True)
-
+            self.show()
+            self.raise_()
+            self.activateWindow()
     #--------------------------------------------------
     # UI
 
