@@ -4,11 +4,11 @@
 
 The program currently supports the following input formats:
 
-`.ims`, `.lif`, `.ome.tiff`, `.ome.zarr`, `.zarr`
+`.ims`, `.lif`, `.ome.tiff`, `.ome.zarr`, `.zarr`.
 
 and supports conversion to the following output formats:
 
-`.ome.zarr` (additional formats may be added in the future)
+`.ome.zarr` (additional formats will be added in the future).
 
 The converter can be used in two modes:
 
