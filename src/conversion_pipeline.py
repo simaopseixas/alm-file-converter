@@ -212,7 +212,7 @@ class file_conversion:
             print(f"Failed to convert file: {input_file_path.name}")
             print(f"Error: {error_message}")
             print(error_traceback.rstrip())
-            print("--------------------------------------")
+            print("-----------------------------------------------------------------------")
         else:
             print(f"Saved File: {output_file.name}")
 
@@ -285,7 +285,7 @@ class file_conversion:
             print(f"Failed to convert file: {input_file_path.name}")
             print(f"Error: {error_message}")
             print(error_traceback.rstrip())
-            print("--------------------------------------")
+            print("-----------------------------------------------------------------------")
         else:
             print(f"Saved File: {output_file.name}")
 
