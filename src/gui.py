@@ -181,7 +181,7 @@ class ConverterWidget(QWidget):
         self.select_file_button.clicked.connect(self.run_single_file_conversion)
 
         # Single Zarr File Button
-        self.select_zarr_button = QPushButton("Select OME-Zarr/Zarr folder")
+        self.select_zarr_button = QPushButton("Select OME-Zarr/Zarr File")
         self.select_zarr_button.setFixedHeight(34)
             # Wire the function
         self.select_zarr_button.clicked.connect(self.run_single_omezarr_conversion)

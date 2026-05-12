@@ -16,6 +16,7 @@ from conversion_functions import file_reading_functions, writing_functions
 from pathlib import Path
 import traceback
 from datetime import datetime
+import gc
 
 
 class file_conversion:
@@ -57,32 +58,33 @@ class file_conversion:
 
         for file_index, input_file_path in enumerate(input_file_paths, start=1):
 
+            print()
+            print(f"Converting file {file_index}/{n_files}: {input_file_path.name}")
+
+            conversion_failed = False
+            error_message = None
+            error_traceback = None
+            output_file = None
+
             # try/except to continue the loop even if there is any error
-            try:
+            with writing_functions.suppress_console_output():
 
-                print()
-                print(f"Converting file {file_index}/{n_files}: {input_file_path.name}")
+                try:
 
-                # Create the appropriate file path
-                output_file = file_conversion.create_output_file_path(output_folder, input_file_path, output_file_format)
+                    # Create the appropriate file path
+                    output_file = file_conversion.create_output_file_path(output_folder, input_file_path, output_file_format)
 
-                # Get the appropriate reader function for the specific input file format
-                reader_function = file_conversion.get_reader_function(input_file_path)
+                    # Get the appropriate reader function for the specific input file format
+                    reader_function = file_conversion.get_reader_function(input_file_path)
 
-                # Suppress unnecassary reading prints:
-                with writing_functions.suppress_console_output():
                     # Apply the reader function to read the file
                     img_array, pixel_size_metadata, img_axes = reader_function(input_file_path)
 
-                # Normalize the axes of the data
-                img_array = writing_functions.normalize_to_tczyx(img_array, img_axes)
+                    # Normalize the axes of the data
+                    img_array = writing_functions.normalize_to_tczyx(img_array, img_axes)
 
-                # Get the appropriate writer function for the specific file format that was chosen
-                writer_function = file_conversion.get_writer_function(output_file_format)
-
-                # Suppress unncessessary writing prints:
-                # Apply the suppress printing function
-                with writing_functions.suppress_console_output():
+                    # Get the appropriate writer function for the specific file format that was chosen
+                    writer_function = file_conversion.get_writer_function(output_file_format)
 
                     # Apply the writer function to create the converted file
                     writer_function(
@@ -93,22 +95,34 @@ class file_conversion:
                         pixel_size_metadata,
                     )
 
-                print(f"Saved File: {output_file.name}")
+                except Exception as error:
+                    conversion_failed = True
+                    error_message = str(error)
+                    error_traceback = traceback.format_exc()
 
-                successful_files += 1
+                # Garbage collect
+                gc.collect()
 
-            except Exception as error:
-                print(f"Failed to convert file: {input_file_path.name}")
-                print(f"Skipping to next file.")
-                print()
+            # Final prints of the file and failed status for the report
+            if conversion_failed:
 
-                # Add report information
-                failed_files += 1
+                # Append the file and the error to the report dictionary
                 failed_files_report.append({
                     "file": input_file_path.name,
-                    "error": traceback.format_exc()
+                    "error": error_traceback,
                 })
+                failed_files += 1
 
+                print(f"Failed to convert file: {input_file_path.name}")
+                print(f"Error: {error_message}")
+                print("Skipping to next file.")
+                print()
+            else:
+                successful_files += 1
+                print(f"Saved File: {output_file.name}")
+                print()
+
+        # Create the final report
         file_conversion.create_report(
             output_folder,
             n_files,
@@ -147,31 +161,33 @@ class file_conversion:
         
         print(f"Converting File: {input_file_path.name}")
 
-        try:
+        conversion_failed = False
+        error_message = None
+        error_traceback = None
+        output_file = None
 
-            # Get the appropriate reader function for the specific input file format
-            reader_function = file_conversion.get_reader_function(input_file_path)
+        # Suppress unnecessary reading prints:
+        with writing_functions.suppress_console_output():
 
-            # Suppress unnecessary reading prints:
-            with writing_functions.suppress_console_output():
+            try:
+
+                # Get the appropriate reader function for the specific input file format
+                reader_function = file_conversion.get_reader_function(input_file_path)
+
                 # Apply the reader function to read the file
                 img_array, pixel_size_metadata, img_axes = reader_function(input_file_path)
 
-            # Get the output "Conversion Folder"
-            output_folder = file_conversion.create_converted_output_folder(input_file_path.parent)
+                # Get the output "Conversion Folder"
+                output_folder = file_conversion.create_converted_output_folder(input_file_path.parent)
 
-            # Create the appropriate file path
-            output_file = file_conversion.create_output_file_path(output_folder, input_file_path, output_file_format)
+                # Create the appropriate file path
+                output_file = file_conversion.create_output_file_path(output_folder, input_file_path, output_file_format)
 
-            # Normalize the axes of the data
-            img_array = writing_functions.normalize_to_tczyx(img_array, img_axes)
+                # Normalize the axes of the data
+                img_array = writing_functions.normalize_to_tczyx(img_array, img_axes)
 
-            # Get the appropriate writer function for the specific file format that was chosen
-            writer_function = file_conversion.get_writer_function(output_file_format)
-
-            # Suppress unncessessary writing prints:
-            # Apply the suppress printing function
-            with writing_functions.suppress_console_output():
+                # Get the appropriate writer function for the specific file format that was chosen
+                writer_function = file_conversion.get_writer_function(output_file_format)
 
                 # Apply the writer function to create the converted file
                 writer_function(
@@ -182,13 +198,23 @@ class file_conversion:
                     pixel_size_metadata,
                 )
 
-            print(f"Saved File: {output_file.name}")
-            print()
 
+            except Exception as error:
+                conversion_failed = True
+                error_message = str(error)
+                error_traceback = traceback.format_exc()
 
-        except Exception as e:
+            # Garbage collect
+            gc.collect()
+
+        if conversion_failed:
             print(f"Failed to convert file: {input_file_path.name}")
-            print(e)
+            print(f"Error: {error_message}")
+            print(error_traceback.rstrip())
+            print("------------------------------")
+            print()
+        else:
+            print(f"Saved File: {output_file.name}")
             print()
 
 
@@ -208,31 +234,33 @@ class file_conversion:
         
         print(f"Converting File: {input_file_path.name}")
 
-        try:
+        conversion_failed = False
+        error_message = None
+        error_traceback = None
+        output_file = None
 
-            # Get the appropriate reader function for the specific input file format
-            reader_function = file_conversion.get_reader_function(input_file_path)
+        # Suppress unnecessary reading prints:
+        with writing_functions.suppress_console_output():
 
-            # Suppress unnecessary reading prints:
-            with writing_functions.suppress_console_output():
+            try:
+
+                # Get the appropriate reader function for the specific input file format
+                reader_function = file_conversion.get_reader_function(input_file_path)
+
                 # Apply the reader function to read the file
                 img_array, pixel_size_metadata, img_axes = reader_function(input_file_path)
 
-            # Get the output "Conversion Folder"
-            output_folder = file_conversion.create_converted_output_folder(input_file_path.parent)
+                # Get the output "Conversion Folder"
+                output_folder = file_conversion.create_converted_output_folder(input_file_path.parent)
 
-            # Create the appropriate file path
-            output_file = file_conversion.create_output_file_path(output_folder, input_file_path, output_file_format)
+                # Create the appropriate file path
+                output_file = file_conversion.create_output_file_path(output_folder, input_file_path, output_file_format)
 
-            # Normalize the axes of the data
-            img_array = writing_functions.normalize_to_tczyx(img_array, img_axes)
+                # Normalize the axes of the data
+                img_array = writing_functions.normalize_to_tczyx(img_array, img_axes)
 
-            # Get the appropriate writer function for the specific file format that was chosen
-            writer_function = file_conversion.get_writer_function(output_file_format)
-
-            # Suppress unncessessary writing prints:
-            # Apply the suppress printing function
-            with writing_functions.suppress_console_output():
+                # Get the appropriate writer function for the specific file format that was chosen
+                writer_function = file_conversion.get_writer_function(output_file_format)
 
                 # Apply the writer function to create the converted file
                 writer_function(
@@ -243,13 +271,23 @@ class file_conversion:
                     pixel_size_metadata,
                 )
 
-            print(f"Saved File: {output_file.name}")
-            print()
 
+            except Exception as error:
+                conversion_failed = True
+                error_message = str(error)
+                error_traceback = traceback.format_exc()
 
-        except Exception as e:
+            # Garbage collect
+            gc.collect()
+
+        if conversion_failed:
             print(f"Failed to convert file: {input_file_path.name}")
-            print(e)
+            print(f"Error: {error_message}")
+            print(error_traceback.rstrip())
+            print("------------------------------")
+            print()
+        else:
+            print(f"Saved File: {output_file.name}")
             print()
 
 
