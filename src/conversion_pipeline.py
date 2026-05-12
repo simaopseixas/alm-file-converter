@@ -34,8 +34,9 @@ class file_conversion:
         """
 
         print()
+        print("-----------------------------")
         print("Batch Conversion:")
-        print("------------------------------")
+        print("-----------------------------")
 
         # If the folder was not yet chosen, let the user choose it
         if input_file_paths is None or n_files is None or input_folder is None:
@@ -114,13 +115,11 @@ class file_conversion:
                 })
                 failed_files += 1
 
-                print()
                 print(f"Failed to convert file: {input_file_path.name}")
                 print(f"Error: {error_message}")
                 print("Skipping to next file.")
             else:
                 successful_files += 1
-                print()
                 print(f"Saved File: {output_file.name}")
 
         # Create the final report
@@ -213,9 +212,8 @@ class file_conversion:
             print(f"Failed to convert file: {input_file_path.name}")
             print(f"Error: {error_message}")
             print(error_traceback.rstrip())
-            print("------------------------------")
+            print("--------------------------------------")
         else:
-            print()
             print(f"Saved File: {output_file.name}")
 
 
@@ -287,9 +285,8 @@ class file_conversion:
             print(f"Failed to convert file: {input_file_path.name}")
             print(f"Error: {error_message}")
             print(error_traceback.rstrip())
-            print("------------------------------")
+            print("--------------------------------------")
         else:
-            print()
             print(f"Saved File: {output_file.name}")
 
 
@@ -539,4 +536,5 @@ class file_conversion:
                 report.write(f"File: {failed_file['file']}\n")
                 report.write(f"Error: {failed_file['error']}\n\n")
 
+        print()
         print(f"Conversion report saved to: {report_file}")
