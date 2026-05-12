@@ -41,12 +41,7 @@ class file_conversion:
         
         print(f"Selected File: {input_file_path.name}")
 
-        # Get the output "Conversion Folder"
-        output_folder = file_conversion.create_converted_output_folder(input_file_path.parent)
-
         try:
-            # Create the appropriate file path
-            output_file = file_conversion.create_output_file_path(output_folder, input_file_path, output_file_format)
 
             # Get the appropriate reader function for the specific input file format
             reader_function = file_conversion.get_reader_function(input_file_path)
@@ -55,6 +50,12 @@ class file_conversion:
             with writing_functions.suppress_console_output():
                 # Apply the reader function to read the file
                 img_array, pixel_size_metadata, img_axes = reader_function(input_file_path)
+
+            # Get the output "Conversion Folder"
+            output_folder = file_conversion.create_converted_output_folder(input_file_path.parent)
+
+            # Create the appropriate file path
+            output_file = file_conversion.create_output_file_path(output_folder, input_file_path, output_file_format)
 
             # Normalize the axes of the data
             img_array = writing_functions.normalize_to_tczyx(img_array, img_axes)
@@ -78,9 +79,9 @@ class file_conversion:
             print(f"Saved File: {output_file.name}")
 
 
-        except Exception:
+        except Exception as e:
             print(f"Failed to convert file: {input_file_path.name}")
-
+            print(e)
 
 
 
