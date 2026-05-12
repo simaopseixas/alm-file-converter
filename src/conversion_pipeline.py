@@ -79,6 +79,63 @@ class file_conversion:
             print(f"Failed to convert file: {input_file_path.name}")
             print(e)
 
+    def single_omezarr_conversion(output_file_format):
+        """
+        Performs the conversion algorithm for a single OME-Zarr/Zarr file.
+        From file choice, reading as a dask array and writing as the intended format.
+        """
+
+        # Let the user choose the file
+        input_file_path = file_conversion.zarr_choice()
+
+        # If no file is selected, cancel the conversion
+        if input_file_path is None:
+            return
+        
+        print(f"Converting File: {input_file_path.name}")
+
+        try:
+
+            # Get the appropriate reader function for the specific input file format
+            reader_function = file_conversion.get_reader_function(input_file_path)
+
+            # Suppress unnecessary reading prints:
+            with writing_functions.suppress_console_output():
+                # Apply the reader function to read the file
+                img_array, pixel_size_metadata, img_axes = reader_function(input_file_path)
+
+            # Get the output "Conversion Folder"
+            output_folder = file_conversion.create_converted_output_folder(input_file_path.parent)
+
+            # Create the appropriate file path
+            output_file = file_conversion.create_output_file_path(output_folder, input_file_path, output_file_format)
+
+            # Normalize the axes of the data
+            img_array = writing_functions.normalize_to_tczyx(img_array, img_axes)
+
+            # Get the appropriate writer function for the specific file format that was chosen
+            writer_function = file_conversion.get_writer_function(output_file_format)
+
+            # Suppress unncessessary writing prints:
+            # Apply the suppress printing function
+            with writing_functions.suppress_console_output():
+
+                # Apply the writer function to create the converted file
+                writer_function(
+                    output_file,
+                    img_array,
+                    img_array.shape,
+                    img_axes,
+                    pixel_size_metadata,
+                )
+
+            print(f"Saved File: {output_file.name}")
+
+
+        except Exception as e:
+            print(f"Failed to convert file: {input_file_path.name}")
+            print(e)
+
 
 
     def batch_conversion(output_file_format):
@@ -184,7 +241,7 @@ class file_conversion:
 
     def file_choice():
         """
-        Open a dialog to choose a single microscopy file.
+        Open a PySide6 dialog to choose a single microscopy file.
         """
 
         app = QApplication.instance() or QApplication([])
@@ -201,6 +258,32 @@ class file_conversion:
             return None
         
         return Path(file_path)
+    
+    def zarr_choice():
+        """
+        Open a PySide6 dialog to choose a single OME-Zarr/Zarr file
+        """
+
+        app = QApplication.instance() or QApplication([])
+
+        zarr_path = QFileDialog.getExistingDirectory(
+            None,
+            "Select OME-Zarr/Zarr folder",
+        )
+
+        if not zarr_path:
+            print("No OME-Zarr/Zarr Folder selected.")
+            return None
+        
+        zarr_path = Path(zarr_path)
+
+        name = zarr_path.name.lower()
+
+        if not name.endswith((".ome.zarr", ".zarr")):
+            print("Selected folder is not an OME-Zarr/Zarr folder.")
+            return None
+        
+        return zarr_path
 
     def folder_choice():
         """
@@ -336,6 +419,7 @@ class file_conversion:
             ".ome.tiff": file_reading_functions.read_ometiff_as_dask,
             ".ome.zarr": file_reading_functions.read_omezarr_as_dask,
             ".lif": file_reading_functions.read_lif_as_dask,
+            ".zarr": file_reading_functions.read_omezarr_as_dask,
         }
 
         for input_file_format, reader_function in READER_FUNCTIONS.items():
@@ -385,3 +469,6 @@ class file_conversion:
                 report.write(f"Error: {failed_file['error']}\n\n")
 
         print(f"Conversion report saved to: {report_file}")
+
+if __name__ == "__main__":
+    file_conversion.single_omezarr_conversion(".ome.zarr")
