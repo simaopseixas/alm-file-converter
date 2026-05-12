@@ -34,9 +34,9 @@ class file_conversion:
         """
 
         print()
-        print("-----------------------------")
+        print("-----------------------------------------------------------------------")
         print("Batch Conversion:")
-        print("-----------------------------")
+        print("-----------------------------------------------------------------------")
 
         # If the folder was not yet chosen, let the user choose it
         if input_file_paths is None or n_files is None or input_folder is None:
