@@ -32,12 +32,37 @@ class ConverterWidget(QWidget):
     #--------------------------------------------------
     # Algorithm Functions
 
-    def run_batch_conversion(self):
+    def run_single_file_conversion(self):
+        """
+        Function that handles the conversion of a single microscopy file inside the GUI
+        """
 
-        # Verify the user choise for the output files
+        # Verify the user choice for the output file
         output_file_format = self.format_combobox.currentText()
 
-        # Disable the GUI window while the conversion happens
+        # hide the GUI while the conversion happens
+        self.hide()
+        QApplication.processEvents()
+
+        # Initialize the single-file conversion algorithm
+        try:
+            file_conversion.single_file_conversion(output_file_format)
+        finally:
+            self.show()
+            self.raise_()
+            self.activateWindow()
+
+
+
+    def run_batch_conversion(self):
+        """
+        Function that handles the batch conversion inside the GUI
+        """
+
+        # Verify the user choice for the output files
+        output_file_format = self.format_combobox.currentText()
+
+        # Hide the GUI window while the conversion happens
         self.hide()
         QApplication.processEvents()
 
@@ -104,11 +129,14 @@ class ConverterWidget(QWidget):
         # Batch Procesing Button
         self.choose_button = QPushButton()
         self.choose_button.setFixedHeight(34)
+            # Wire the function
         self.choose_button.clicked.connect(self.run_batch_conversion)
 
         # Single Microscopy File Button
         self.select_file_button = QPushButton("Select Microscopy File")
         self.select_file_button.setFixedHeight(34)
+            # Wire the function
+        self.select_file_button.clicked.connect(self.run_single_file_conversion)
 
         # Single Zarr File Button
         self.select_zarr_button = QPushButton("Select OME-Zarr/Zarr folder")
@@ -285,8 +313,15 @@ class ConverterWidget(QWidget):
 
 
 if __name__ == "__main__":
+
+    print("ALM Microscopy File Converter")
+    print("==============================")
+    print()
+    
     app = QApplication(sys.argv)
     app.setWindowIcon(QIcon(str(Path(__file__).resolve().parent / "attributes" / "ALM.ico")))
     window = ConverterWidget()
     window.show()
     sys.exit(app.exec())
+
+

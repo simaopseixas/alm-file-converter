@@ -28,10 +28,6 @@ class file_conversion:
         From file choice, reading as a dask array and writing as the intended format.
         """
 
-        print("ALM Microscopy File Converter")
-        print("==============================")
-        print()
-
         # Let the user choose the file
         input_file_path = file_conversion.file_choice()
 
@@ -39,7 +35,7 @@ class file_conversion:
         if input_file_path is None:
             return
         
-        print(f"Selected File: {input_file_path.name}")
+        print(f"Converting File: {input_file_path.name}")
 
         try:
 
@@ -90,10 +86,6 @@ class file_conversion:
         Performs the conversion algorithm for a batched conversion
         From folder choice, reading as a dask array, and writing as the intended format.
         """
-
-        print("ALM Microscopy File Converter")
-        print("==============================")
-        print()
 
         # Let the user choose its folder
         input_file_paths, n_files, input_folder = file_conversion.folder_choice()
@@ -393,8 +385,3 @@ class file_conversion:
                 report.write(f"Error: {failed_file['error']}\n\n")
 
         print(f"Conversion report saved to: {report_file}")
-
-
-
-if __name__ == "__main__":
-    file_conversion.single_file_conversion(".ome.zarr")
