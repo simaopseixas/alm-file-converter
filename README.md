@@ -3,15 +3,17 @@
 ALM Microscopy File Converter is a tool for converting microscopy image files into other formats.
 
 The program currently supports the following input formats:
+
 `.ims`, `.lif`, `.ome.tiff`, `.ome.zarr`, `.zarr`
 
 and supports convertion to the following output formats:
+
 `.ome.zarr` (more will be added)
 
 The converter can be used in two modes:
 
 1. **Batch Conversion**, where all supported files inside a selected folder are converted.
-2. **Single-file Conversion*, where the user selects one microscopy file to be converted
+2. **Single-file Conversion**, where the user selects one microscopy file to be converted
 
 The program is designed to work with large microscopy datasets by relying on lazy loading through Zarr/Dask, reducing the need to load the entire dataset into memory at once.
 
@@ -73,7 +75,9 @@ To build the standalone executable, run:
 
 Converted files are saved inside a new folder named `\Converted Files` which is created inside the selected input folder, or next to the selected input file.
 
-If any file fails during batch conversion, a timestamped report is saved in that same output folder: `conversion_report_YYYY-MM-DD_HH-MM-SS.txt`
+If any file fails during batch conversion, a timestamped report is saved in that same output folder:
+
+`conversion_report_YYYY-MM-DD_HH-MM-SS.txt`
 
 The report contains:
 - Total number of files.
