@@ -10,7 +10,6 @@ from gui import ConverterWidget
 if __name__ == "__main__":
     print("ALM Microscopy File Converter")
     print("==============================")
-    print()
 
     app = QApplication(sys.argv)
 

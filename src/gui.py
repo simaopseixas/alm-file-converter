@@ -1,7 +1,7 @@
 import sys
 from pathlib import Path
 
-from PySide6.QtCore import Qt, QSettings
+from PySide6.QtCore import Qt, QSettings, QTimer
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
     QApplication,
@@ -55,9 +55,7 @@ class ConverterWidget(QWidget):
         try:
             file_conversion.single_file_conversion(output_file_format, input_file_path)
         finally:
-            self.show()
-            self.raise_()
-            self.activateWindow()
+            self.restore_window()
 
     
     def run_single_omezarr_conversion(self):
@@ -82,9 +80,7 @@ class ConverterWidget(QWidget):
         try:
             file_conversion.single_omezarr_conversion(output_file_format, input_file_path)
         finally:
-            self.show()
-            self.raise_()
-            self.activateWindow()
+            self.restore_window()
 
 
     def run_batch_conversion(self):
@@ -96,7 +92,7 @@ class ConverterWidget(QWidget):
         output_file_format = self.format_combobox.currentText()
 
         # Let the user choose the folder
-        input_file_paths, n_files, input_folder = file_conversion.folder_choice()
+        input_file_paths, n_files, input_folder = file_conversion.folder_choice(self)
 
         if input_folder is None:
             return
@@ -109,9 +105,8 @@ class ConverterWidget(QWidget):
         try:
             file_conversion.batch_conversion(output_file_format, input_file_paths, n_files, input_folder)
         finally:
-            self.show()
-            self.raise_()
-            self.activateWindow()
+            self.restore_window()
+
     #--------------------------------------------------
     # UI
 
@@ -224,6 +219,18 @@ class ConverterWidget(QWidget):
 
     #--------------------------------------------------
     # Stylistic Functions
+
+    def restore_window(self):
+        """
+        Function that makes sure the GUI window is always restored
+        """
+
+        self.show()
+        self.raise_()
+        self.activateWindow()
+        QTimer.singleShot(100, self.raise_)
+        QTimer.singleShot(100, self.activateWindow)
+
 
     def save_batch_setting(self, checked):
         """

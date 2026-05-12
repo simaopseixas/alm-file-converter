@@ -33,9 +33,9 @@ class file_conversion:
         From folder choice, reading as a dask array, and writing as the intended format.
         """
 
+        print()
         print("Batch Conversion:")
         print("------------------------------")
-        print()
 
         # If the folder was not yet chosen, let the user choose it
         if input_file_paths is None or n_files is None or input_folder is None:
@@ -45,6 +45,7 @@ class file_conversion:
         if input_folder is None:
             return
         
+        print()
         print(f"Selected Folder: {input_folder}")
         print(f"Found {n_files} Microscopy Files.")
         
@@ -113,14 +114,14 @@ class file_conversion:
                 })
                 failed_files += 1
 
+                print()
                 print(f"Failed to convert file: {input_file_path.name}")
                 print(f"Error: {error_message}")
                 print("Skipping to next file.")
-                print()
             else:
                 successful_files += 1
-                print(f"Saved File: {output_file.name}")
                 print()
+                print(f"Saved File: {output_file.name}")
 
         # Create the final report
         file_conversion.create_report(
@@ -135,12 +136,11 @@ class file_conversion:
         print("Conversion finished.")
         if failed_files == 0:
             print("All files were successfully converted.")
-            print()
         else:
+            print()
             print(f"Successful Files: {successful_files}/{n_files}")
             print(f"Failed Files: {failed_files}/{n_files}")
             print("Some files failed to convert. Check the conversion report for details.")
-            print()
 
     #------------------------------------------
     # Single-File Conversion
@@ -159,6 +159,7 @@ class file_conversion:
         if input_file_path is None:
             return
         
+        print()
         print(f"Converting File: {input_file_path.name}")
 
         conversion_failed = False
@@ -208,14 +209,14 @@ class file_conversion:
             gc.collect()
 
         if conversion_failed:
+            print()
             print(f"Failed to convert file: {input_file_path.name}")
             print(f"Error: {error_message}")
             print(error_traceback.rstrip())
             print("------------------------------")
-            print()
         else:
-            print(f"Saved File: {output_file.name}")
             print()
+            print(f"Saved File: {output_file.name}")
 
 
     def single_omezarr_conversion(output_file_format, input_file_path=None):
@@ -232,6 +233,7 @@ class file_conversion:
         if input_file_path is None:
             return
         
+        print()
         print(f"Converting File: {input_file_path.name}")
 
         conversion_failed = False
@@ -281,14 +283,14 @@ class file_conversion:
             gc.collect()
 
         if conversion_failed:
+            print()
             print(f"Failed to convert file: {input_file_path.name}")
             print(f"Error: {error_message}")
             print(error_traceback.rstrip())
             print("------------------------------")
-            print()
         else:
-            print(f"Saved File: {output_file.name}")
             print()
+            print(f"Saved File: {output_file.name}")
 
 
     ##############################################
@@ -309,8 +311,8 @@ class file_conversion:
         )
 
         if not file_path:
-            print("No file selected.")
             print()
+            print("No file selected.")
             return None
         
         return Path(file_path)
@@ -332,7 +334,8 @@ class file_conversion:
             )
 
             if not zarr_path:
-                print("No OME-Zarr/Zarr Folder selected.")
+                print()
+                print("No OME-Zarr/Zarr file selected.")
                 return None
             
             zarr_path = Path(zarr_path)
@@ -342,16 +345,16 @@ class file_conversion:
                 is_it_omezarr = True
 
             else:
+                print()
                 print("Selected folder is not an OME-Zarr/Zarr.")
                 print("Please choose another folder.")
-                print()
 
                 QApplication.processEvents()
 
         return zarr_path
             
         
-    def folder_choice():
+    def folder_choice(parent=None):
         """
         Open a PySide6 dialog to choose a folder and screen it for microscopy files.
         """
@@ -366,14 +369,14 @@ class file_conversion:
 
             # Open a window to select a folder
             folder_path = QFileDialog.getExistingDirectory(
-                None,
+                parent,
                 "Select Folder containing microscopy files",
             )
 
             # If no folder was selected, simply cancel the conversion
             if not folder_path:
-                print("No folder selected.")
                 print()
+                print("No folder selected.")
                 return [], 0, None
 
             # Introduce the Path variable
@@ -386,9 +389,9 @@ class file_conversion:
             if len(files) != 0:
                 are_there_microscopy_files = True
             else:
+                print()
                 print("No microscopy files found in this folder.", flush=True)
                 print("Choose another folder.")
-                print()
 
         n_files = len(files)
 
