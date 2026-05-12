@@ -135,11 +135,13 @@ class file_conversion:
         print("Conversion finished.")
         if failed_files == 0:
             print("All files were successfully converted.")
+            print("-----------------------------------------------------------------------")
         else:
             print()
             print(f"Successful Files: {successful_files}/{n_files}")
             print(f"Failed Files: {failed_files}/{n_files}")
             print("Some files failed to convert. Check the conversion report for details.")
+            print("-----------------------------------------------------------------------")
 
     #------------------------------------------
     # Single-File Conversion
@@ -159,6 +161,7 @@ class file_conversion:
             return
         
         print()
+        print("-----------------------------------------------------------------------")
         print(f"Converting File: {input_file_path.name}")
 
         conversion_failed = False
@@ -215,6 +218,7 @@ class file_conversion:
             print("-----------------------------------------------------------------------")
         else:
             print(f"Saved File: {output_file.name}")
+            print("-----------------------------------------------------------------------")
 
 
     def single_omezarr_conversion(output_file_format, input_file_path=None):
@@ -232,6 +236,7 @@ class file_conversion:
             return
         
         print()
+        print("-----------------------------------------------------------------------")
         print(f"Converting File: {input_file_path.name}")
 
         conversion_failed = False
@@ -288,6 +293,7 @@ class file_conversion:
             print("-----------------------------------------------------------------------")
         else:
             print(f"Saved File: {output_file.name}")
+            print("-----------------------------------------------------------------------")
 
 
     ##############################################
