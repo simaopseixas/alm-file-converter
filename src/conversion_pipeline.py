@@ -272,6 +272,7 @@ class file_conversion:
 
         if not file_path:
             print("No file selected.")
+            print()
             return None
         
         return Path(file_path)
