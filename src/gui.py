@@ -41,18 +41,50 @@ class ConverterWidget(QWidget):
         # Verify the user choice for the output file
         output_file_format = self.format_combobox.currentText()
 
+        # Let the user choose the file
+        input_file_path = file_conversion.file_choice()
+
+        if input_file_path is None:
+            return
+
         # hide the GUI while the conversion happens
         self.hide()
         QApplication.processEvents()
 
         # Initialize the single-file conversion algorithm
         try:
-            file_conversion.single_file_conversion(output_file_format)
+            file_conversion.single_file_conversion(output_file_format, input_file_path)
         finally:
             self.show()
             self.raise_()
             self.activateWindow()
 
+    
+    def run_single_omezarr_conversion(self):
+        """
+        Function that handles the conversion of a single OME-Zarr/Zarr file inside the GUI
+        """
+
+        # Verify the user choice for the output file
+        output_file_format = self.format_combobox.currentText()
+
+        # Let the user choose the file
+        input_file_path = file_conversion.zarr_choice()
+
+        if input_file_path is None:
+            return
+
+        # hide the GUI while the conversion happens
+        self.hide()
+        QApplication.processEvents()
+
+        # Initialize the single-file conversion algorithm
+        try:
+            file_conversion.single_omezarr_conversion(output_file_format, input_file_path)
+        finally:
+            self.show()
+            self.raise_()
+            self.activateWindow()
 
 
     def run_batch_conversion(self):
@@ -63,13 +95,19 @@ class ConverterWidget(QWidget):
         # Verify the user choice for the output files
         output_file_format = self.format_combobox.currentText()
 
+        # Let the user choose the folder
+        input_file_paths, n_files, input_folder = file_conversion.folder_choice()
+
+        if input_folder is None:
+            return
+
         # Hide the GUI window while the conversion happens
         self.hide()
         QApplication.processEvents()
 
         # Initialize the conversion algorithm
         try:
-            file_conversion.batch_conversion(output_file_format)
+            file_conversion.batch_conversion(output_file_format, input_file_paths, n_files, input_folder)
         finally:
             self.show()
             self.raise_()
@@ -145,6 +183,8 @@ class ConverterWidget(QWidget):
         # Single Zarr File Button
         self.select_zarr_button = QPushButton("Select OME-Zarr/Zarr folder")
         self.select_zarr_button.setFixedHeight(34)
+            # Wire the function
+        self.select_zarr_button.clicked.connect(self.run_single_omezarr_conversion)
 
         #-----------------------------------------
         # UI Layout Structure

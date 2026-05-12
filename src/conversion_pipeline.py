@@ -20,129 +20,20 @@ import traceback
 class file_conversion:
 
     ##############################################
-    # Main function for conversion
+    # Functions for conversion
 
-    def single_file_conversion(output_file_format):
-        """
-        Performs the conversion algorithm for a single file.
-        From file choice, reading as a dask array and writing as the intended format.
-        """
+    #------------------------------------------
+    # Batch Conversion
 
-        # Let the user choose the file
-        input_file_path = file_conversion.file_choice()
-
-        # If no file is selected, cancel the conversion
-        if input_file_path is None:
-            return
-        
-        print(f"Converting File: {input_file_path.name}")
-
-        try:
-
-            # Get the appropriate reader function for the specific input file format
-            reader_function = file_conversion.get_reader_function(input_file_path)
-
-            # Suppress unnecessary reading prints:
-            with writing_functions.suppress_console_output():
-                # Apply the reader function to read the file
-                img_array, pixel_size_metadata, img_axes = reader_function(input_file_path)
-
-            # Get the output "Conversion Folder"
-            output_folder = file_conversion.create_converted_output_folder(input_file_path.parent)
-
-            # Create the appropriate file path
-            output_file = file_conversion.create_output_file_path(output_folder, input_file_path, output_file_format)
-
-            # Normalize the axes of the data
-            img_array = writing_functions.normalize_to_tczyx(img_array, img_axes)
-
-            # Get the appropriate writer function for the specific file format that was chosen
-            writer_function = file_conversion.get_writer_function(output_file_format)
-
-            # Suppress unncessessary writing prints:
-            # Apply the suppress printing function
-            with writing_functions.suppress_console_output():
-
-                # Apply the writer function to create the converted file
-                writer_function(
-                    output_file,
-                    img_array,
-                    img_array.shape,
-                    img_axes,
-                    pixel_size_metadata,
-                )
-
-            print(f"Saved File: {output_file.name}")
-
-
-        except Exception as e:
-            print(f"Failed to convert file: {input_file_path.name}")
-            print(e)
-
-    def single_omezarr_conversion(output_file_format):
-        """
-        Performs the conversion algorithm for a single OME-Zarr/Zarr file.
-        From file choice, reading as a dask array and writing as the intended format.
-        """
-
-        # Let the user choose the file
-        input_file_path = file_conversion.zarr_choice()
-
-        # If no file is selected, cancel the conversion
-        if input_file_path is None:
-            return
-        
-        print(f"Converting File: {input_file_path.name}")
-
-        try:
-
-            # Get the appropriate reader function for the specific input file format
-            reader_function = file_conversion.get_reader_function(input_file_path)
-
-            # Suppress unnecessary reading prints:
-            with writing_functions.suppress_console_output():
-                # Apply the reader function to read the file
-                img_array, pixel_size_metadata, img_axes = reader_function(input_file_path)
-
-            # Get the output "Conversion Folder"
-            output_folder = file_conversion.create_converted_output_folder(input_file_path.parent)
-
-            # Create the appropriate file path
-            output_file = file_conversion.create_output_file_path(output_folder, input_file_path, output_file_format)
-
-            # Normalize the axes of the data
-            img_array = writing_functions.normalize_to_tczyx(img_array, img_axes)
-
-            # Get the appropriate writer function for the specific file format that was chosen
-            writer_function = file_conversion.get_writer_function(output_file_format)
-
-            # Suppress unncessessary writing prints:
-            # Apply the suppress printing function
-            with writing_functions.suppress_console_output():
-
-                # Apply the writer function to create the converted file
-                writer_function(
-                    output_file,
-                    img_array,
-                    img_array.shape,
-                    img_axes,
-                    pixel_size_metadata,
-                )
-
-            print(f"Saved File: {output_file.name}")
-
-
-        except Exception as e:
-            print(f"Failed to convert file: {input_file_path.name}")
-            print(e)
-
-
-
-    def batch_conversion(output_file_format):
+    def batch_conversion(output_file_format, input_file_paths=None, n_files=None, input_folder=None):
         """
         Performs the conversion algorithm for a batched conversion
         From folder choice, reading as a dask array, and writing as the intended format.
         """
+
+        print("Batch Conversion:")
+        print("------------------------------")
+        print()
 
         # Let the user choose its folder
         input_file_paths, n_files, input_folder = file_conversion.folder_choice()
@@ -233,7 +124,127 @@ class file_conversion:
             print(f"Failed Files: {failed_files}/{n_files}")
             print("Some files failed to convert. Check the conversion report for details.")
 
+    #------------------------------------------
+    # Single-File Conversion
 
+    def single_file_conversion(output_file_format, input_file_path=None):
+        """
+        Performs the conversion algorithm for a single file.
+        From file choice, reading as a dask array and writing as the intended format.
+        """
+
+        # Let the user choose the file. The "if" statement is a safe-guard against the closing of the dialog and the main GUI
+        if input_file_path is None:
+            input_file_path = file_conversion.file_choice
+
+        # If the user closes the dialog, cancel the conversion
+        if input_file_path is None:
+            return
+        
+        print(f"Converting File: {input_file_path.name}")
+
+        try:
+
+            # Get the appropriate reader function for the specific input file format
+            reader_function = file_conversion.get_reader_function(input_file_path)
+
+            # Suppress unnecessary reading prints:
+            with writing_functions.suppress_console_output():
+                # Apply the reader function to read the file
+                img_array, pixel_size_metadata, img_axes = reader_function(input_file_path)
+
+            # Get the output "Conversion Folder"
+            output_folder = file_conversion.create_converted_output_folder(input_file_path.parent)
+
+            # Create the appropriate file path
+            output_file = file_conversion.create_output_file_path(output_folder, input_file_path, output_file_format)
+
+            # Normalize the axes of the data
+            img_array = writing_functions.normalize_to_tczyx(img_array, img_axes)
+
+            # Get the appropriate writer function for the specific file format that was chosen
+            writer_function = file_conversion.get_writer_function(output_file_format)
+
+            # Suppress unncessessary writing prints:
+            # Apply the suppress printing function
+            with writing_functions.suppress_console_output():
+
+                # Apply the writer function to create the converted file
+                writer_function(
+                    output_file,
+                    img_array,
+                    img_array.shape,
+                    img_axes,
+                    pixel_size_metadata,
+                )
+
+            print(f"Saved File: {output_file.name}")
+            print()
+
+
+        except Exception as e:
+            print(f"Failed to convert file: {input_file_path.name}")
+            print(e)
+
+
+    def single_omezarr_conversion(output_file_format, input_file_path=None):
+        """
+        Performs the conversion algorithm for a single OME-Zarr/Zarr file.
+        From file choice, reading as a dask array and writing as the intended format.
+        """
+
+        # Let the user choose the file. The "if" statement is a safe-guard against the closing of the dialog and the main GUI
+        if input_file_path is None:
+            input_file_path = file_conversion.zarr_choice
+
+        # If the user closes the dialog, cancel the conversion
+        if input_file_path is None:
+            return
+        
+        print(f"Converting File: {input_file_path.name}")
+
+        try:
+
+            # Get the appropriate reader function for the specific input file format
+            reader_function = file_conversion.get_reader_function(input_file_path)
+
+            # Suppress unnecessary reading prints:
+            with writing_functions.suppress_console_output():
+                # Apply the reader function to read the file
+                img_array, pixel_size_metadata, img_axes = reader_function(input_file_path)
+
+            # Get the output "Conversion Folder"
+            output_folder = file_conversion.create_converted_output_folder(input_file_path.parent)
+
+            # Create the appropriate file path
+            output_file = file_conversion.create_output_file_path(output_folder, input_file_path, output_file_format)
+
+            # Normalize the axes of the data
+            img_array = writing_functions.normalize_to_tczyx(img_array, img_axes)
+
+            # Get the appropriate writer function for the specific file format that was chosen
+            writer_function = file_conversion.get_writer_function(output_file_format)
+
+            # Suppress unncessessary writing prints:
+            # Apply the suppress printing function
+            with writing_functions.suppress_console_output():
+
+                # Apply the writer function to create the converted file
+                writer_function(
+                    output_file,
+                    img_array,
+                    img_array.shape,
+                    img_axes,
+                    pixel_size_metadata,
+                )
+
+            print(f"Saved File: {output_file.name}")
+            print()
+
+
+        except Exception as e:
+            print(f"Failed to convert file: {input_file_path.name}")
+            print(e)
 
 
     ##############################################
@@ -264,27 +275,37 @@ class file_conversion:
         Open a PySide6 dialog to choose a single OME-Zarr/Zarr file
         """
 
+        is_it_omezarr = False
+
         app = QApplication.instance() or QApplication([])
 
-        zarr_path = QFileDialog.getExistingDirectory(
-            None,
-            "Select OME-Zarr/Zarr folder",
-        )
+        while is_it_omezarr == False:
 
-        if not zarr_path:
-            print("No OME-Zarr/Zarr Folder selected.")
-            return None
-        
-        zarr_path = Path(zarr_path)
+            zarr_path = QFileDialog.getExistingDirectory(
+                None,
+                "Select OME-Zarr/Zarr folder",
+            )
 
-        name = zarr_path.name.lower()
+            if not zarr_path:
+                print("No OME-Zarr/Zarr Folder selected.")
+                return None
+            
+            zarr_path = Path(zarr_path)
+            name = zarr_path.name.lower()
 
-        if not name.endswith((".ome.zarr", ".zarr")):
-            print("Selected folder is not an OME-Zarr/Zarr folder.")
-            return None
-        
+            if name.endswith((".ome.zarr", ".zarr")):
+                is_it_omezarr = True
+
+            else:
+                print("Selected folder is not an OME-Zarr/Zarr.")
+                print("Please choose another folder.")
+                print()
+
+                QApplication.processEvents()
+
         return zarr_path
-
+            
+        
     def folder_choice():
         """
         Open a PySide6 dialog to choose a folder and screen it for microscopy files.
@@ -307,6 +328,7 @@ class file_conversion:
             # If no folder was selected, simply cancel the conversion
             if not folder_path:
                 print("No folder selected.")
+                print()
                 return [], 0, None
 
             # Introduce the Path variable
@@ -469,6 +491,3 @@ class file_conversion:
                 report.write(f"Error: {failed_file['error']}\n\n")
 
         print(f"Conversion report saved to: {report_file}")
-
-if __name__ == "__main__":
-    file_conversion.single_omezarr_conversion(".ome.zarr")
