@@ -166,7 +166,7 @@ class ConverterWidget(QWidget):
 
         # Output file format ComboBox
         self.format_combobox = QComboBox()
-        self.format_combobox.addItems([".ome.zarr"])
+        self.format_combobox.addItems([".ome.tiff", ".ome.zarr"])
 
         # Batch Procesing Button
         self.choose_button = QPushButton()

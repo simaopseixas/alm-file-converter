@@ -95,6 +95,7 @@ class file_conversion:
                         img_array.shape,
                         img_axes,
                         pixel_size_metadata,
+                        output_file_format
                     )
 
                 except Exception as error:

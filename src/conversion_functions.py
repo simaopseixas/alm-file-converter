@@ -255,7 +255,8 @@ class writing_functions:
             img_array,
             img_dims,
             img_axes,
-            pixel_size_metadata
+            pixel_size_metadata,
+            output_file_format,
     ):
         """
         Function that takes a dask array as an input and writes its data into an .ome.zarr file
@@ -346,3 +347,69 @@ class writing_functions:
                 overwrite=True,
                 ngff_version="0.4",
             )
+
+
+    def write_ome_tiff(
+            output_path,
+            img_array,
+            img_dims,
+            img_axes,
+            pixel_size_metadata,
+            output_file_format
+    ):
+        """
+        Function that takes a dask array as an input and writes its data into an .ome.tiff file
+        """
+
+        # Get the output path
+        output_path = Path(output_path)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Verify if the chosen output file format is OME
+        output_file_format = output_file_format.lower()
+        is_ome_tiff = output_file_format in (".ome.tif", ".ome.tiff")
+
+        def tczyx_plane_access(array, T, C, Z):
+            """
+            Helper function that accesses (Y,X) data given (T,C,Z)
+            """
+
+            for t in range(T):
+                for c in range(C):
+                    for z in range(Z):
+                        plane = array[t, c, z, :, :].compute()
+                        yield np.ascontiguousarray(plane)
+
+        def get_ome_tiff_metadata(is_ome_tiff):
+            """
+            Helper function that returns the voxel size metadata if the output image is an OME
+            """
+
+            if not is_ome_tiff:
+                return None
+            
+            return {
+                "axes": "TCZYX",
+                "PhysicalSizeX": pixel_size_metadata["x"],
+                "PhysicalSizeY": pixel_size_metadata["y"],
+                "PhysicalSizeZ": pixel_size_metadata["z"],
+            }
+
+        # Initialize the writer
+        with tifffile.TiffWriter(output_path, bigtiff=True, ome=is_ome_tiff) as tif:
+
+            # Check the axes of the input file to write accordingly
+            if img_axes == "MTCZYX":
+
+                # Get the dimensions
+                M, T, C, Z, Y, X = img_dims
+
+                # Start the tiff writing
+                if output_file_format == ".tif" or ".tiff":
+
+                    if output_file_format == 
+
+                    tif = tifffile.TiffWriter(output_path, bigtiff=True, ome=False)
+
+                    for m in range()
+
