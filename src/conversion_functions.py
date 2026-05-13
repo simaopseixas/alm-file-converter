@@ -107,7 +107,7 @@ class file_reading_functions:
                     pixel_size_metadata["y"] = float(pixels["PhysicalSizeY"])
 
                 if pixels.get("PhysicalSizeX") is not None:
-                    pixel_size_metadata["x"] = float(pixels["PhysicalSizeY"])
+                    pixel_size_metadata["x"] = float(pixels["PhysicalSizeX"])
 
             # Get any available voxel size metadata for not OME files
             if not tif.ome_metadata:
@@ -125,32 +125,56 @@ class file_reading_functions:
                 y_resolution = page.tags.get("YResolution")
                 resolution_unit = page.tags.get("ResolutionUnit")
 
-                # Dictionary for the units that are available in standard tifs
-                unit_to_micrometer = {
-                    2: 25400.0, # INCH
-                    3: 10000.0, # CENTIMETER
-                }
-
-                # If statement to append metadata to the dictionary, if the metadata is available
-                if (
-                    x_resolution is not None
-                    and y_resolution is not None
-                    and resolution_unit is not None
-                    and resolution_unit.value is unit_to_micrometer
-                ):
-                    
-                    unit_size = unit_to_micrometer[resolution_unit.value]
+                if x_resolution is not None and y_resolution is not None:
 
                     # Get the pixels per unit to then compute the pixel size
                     x_pixels_per_unit = x_resolution.value[0] / x_resolution.value[1]
                     y_pixels_per_unit = y_resolution.value[0] / y_resolution.value[1]
 
-                    # Compute the pixel size and append it to the metadata
-                    if x_pixels_per_unit != 0:
-                        pixel_size_metadata["x"] = unit_size / x_pixels_per_unit
+                    # Get the unit used in ImageJ
+                    imagej_unit = str(imagej_metadata.get("unit", "")).lower()
 
-                    if y_pixels_per_unit != 0:
-                        pixel_size_metadata["y"] = unit_size / y_pixels_per_unit
+                    # Start a dictionary for unit conversions
+                    imagej_unit_to_micrometer = {
+                        "um": 1.0,
+                        "µm": 1.0,
+                        "micron": 1.0,
+                        "microns": 1.0,
+                        "micrometer": 1.0,
+                        "micrometers": 1.0,
+                        "nm": 0.001,
+                        "mm": 1000.0,
+                    }
+
+                    # Dictionary for the units that are available in standard tifs
+                    unit_to_micrometer = {
+                        2: 25400.0, # INCH
+                        3: 10000.0, # CENTIMETER
+                    }
+
+                    # Start the unit variable
+                    unit_size = None
+
+                    # Check if there is actually any unit from ImageJ
+                    if imagej_unit in imagej_unit_to_micrometer:
+                        unit_size = imagej_unit_to_micrometer[imagej_unit]
+
+                    # If ImageJ gives nothing, get it from the tif directly
+                    elif resolution_unit is not None:
+                        resolution_unit_value = int(resolution_unit.value)
+
+                        if resolution_unit_value in unit_to_micrometer:
+                            unit_size = unit_to_micrometer[resolution_unit_value]
+
+                    # Continue to append pixel size if we got an unit size from any of the two methods
+                    if unit_size is not None:
+
+                        if x_pixels_per_unit != 0:
+                            pixel_size_metadata["x"] = unit_size / x_pixels_per_unit
+
+                        if y_pixels_per_unit != 0:
+                            pixel_size_metadata["y"] = unit_size / y_pixels_per_unit
+
 
         return img_array, pixel_size_metadata, img_axes
 
@@ -480,7 +504,7 @@ class writing_functions:
                 for m in range(M):
 
                     # for testing convenience
-                    if m + 4 > 1:
+                    if m + 1 > 4:
                         break
 
                     tif.write(
