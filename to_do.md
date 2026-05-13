@@ -1,5 +1,7 @@
 # TO-DO
 
+# Other things
+
 ## File format support
 
 - Add .nd2 reading support

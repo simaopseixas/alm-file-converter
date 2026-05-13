@@ -478,6 +478,11 @@ class writing_functions:
                 M, T, C, Z, Y, X = img_dims
 
                 for m in range(M):
+
+                    # for testing convenience
+                    if m + 4 > 1:
+                        break
+
                     tif.write(
                         data = tczyx_plane_access(img_array[m, :, :, :, :, :], T, C, Z),
                         shape=(T, C, Z, Y, X),

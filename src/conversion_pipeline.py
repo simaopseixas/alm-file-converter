@@ -121,7 +121,12 @@ class file_conversion:
                 print("Skipping to next file.")
             else:
                 successful_files += 1
-                print(f"Saved File: {output_file.name}")
+
+                # Different prints for different cases
+                if img_axes == "MTCZYX" and output_file_format == ".ome.zarr":
+                    print(f"Saved files to: {output_file.name.removesuffix('.ome.zarr')}")
+                else:
+                    print(f"Saved File: {output_file.name}")
 
         # Create the final report
         file_conversion.create_report(
@@ -219,7 +224,11 @@ class file_conversion:
             print(error_traceback.rstrip())
             print("-----------------------------------------------------------------------")
         else:
-            print(f"Saved File: {output_file.name}")
+            # Different prints for different cases
+            if img_axes == "MTCZYX" and output_file_format == ".ome.zarr":
+                print(f"Saved files to: {output_file.name.removesuffix('.ome.zarr')}")
+            else:
+                print(f"Saved File: {output_file.name}")
             print("-----------------------------------------------------------------------")
 
 
@@ -295,7 +304,11 @@ class file_conversion:
             print(error_traceback.rstrip())
             print("-----------------------------------------------------------------------")
         else:
-            print(f"Saved File: {output_file.name}")
+            # Different prints for different cases
+            if img_axes == "MTCZYX" and output_file_format == ".ome.zarr":
+                print(f"Saved files to: {output_file.name.removesuffix('.ome.zarr')}")
+            else:
+                print(f"Saved File: {output_file.name}")
             print("-----------------------------------------------------------------------")
 
 
