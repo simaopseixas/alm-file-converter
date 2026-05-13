@@ -10,4 +10,5 @@ build/
 dist/
 onfirm --clean "ALM File Converter.spec"
 
-teste_conversion/
+# Test datasets
+test-conversions/

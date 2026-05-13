@@ -52,9 +52,9 @@ class file_reading_functions:
         z_size, y_size, x_size = ims_store.ims.resolution
 
         pixel_size_metadata = {
-            "z": z_size,
-            "y": y_size,
-            "x": x_size,
+            "z": z_size if z_size else None,
+            "y": y_size if y_size else None,
+            "x": x_size if x_size else None,
         }
 
         img_axes = "TCZYX"
@@ -80,6 +80,7 @@ class file_reading_functions:
         # Get the axes of the data
         img_axes = "".join(zarr_array.attrs.get("_ARRAY_DIMENSIONS", ""))
 
+        # Get any metadata
         with tifffile.TiffFile(file_path) as tif:
 
             # Fallback if there were no axes information available
@@ -99,17 +100,60 @@ class file_reading_functions:
                 metadata = tifffile.xml2dict(tif.ome_metadata)
                 pixels = metadata["OME"]["Image"]["Pixels"]
 
-                pixel_size_metadata = {
-                    "z": float(pixels.get("PhysicalSizeZ", 1)),
-                    "y": float(pixels.get("PhysicalSizeY", 1)),
-                    "x": float(pixels.get("PhysicalSizeX", 1)),
-                }
+                if pixels.get("PhysicalSizeZ") is not None:
+                    pixel_size_metadata["z"] = float(pixels["PhysicalSizeZ"])
+
+                if pixels.get("PhysicalSizeY") is not None:
+                    pixel_size_metadata["y"] = float(pixels["PhysicalSizeY"])
+
+                if pixels.get("PhysicalSizeX") is not None:
+                    pixel_size_metadata["x"] = float(pixels["PhysicalSizeY"])
 
             # Get any available voxel size metadata for not OME files
-            if not ome_metadata:
+            if not tif.ome_metadata:
 
+                # Get any available ImageJ metadata, if there is any
+                imagej_metadata = tif.imagej_metadata or {}
+
+                # Get the Zspacing if it exists
+                if imagej_metadata.get("spacing") is not None:
+                    pixel_size_metadata["z"] = float(imagej_metadata["spacing"])
+
+                page = tif.pages[0]
+
+                x_resolution = page.tags.get("XResolution")
+                y_resolution = page.tags.get("YResolution")
+                resolution_unit = page.tags.get("ResolutionUnit")
+
+                # Dictionary for the units that are available in standard tifs
+                unit_to_micrometer = {
+                    2: 25400.0, # INCH
+                    3: 10000.0, # CENTIMETER
+                }
+
+                # If statement to append metadata to the dictionary, if the metadata is available
+                if (
+                    x_resolution is not None
+                    and y_resolution is not None
+                    and resolution_unit is not None
+                    and resolution_unit.value is unit_to_micrometer
+                ):
+                    
+                    unit_size = unit_to_micrometer[resolution_unit.value]
+
+                    # Get the pixels per unit to then compute the pixel size
+                    x_pixels_per_unit = x_resolution.value[0] / x_resolution.value[1]
+                    y_pixels_per_unit = y_resolution.value[0] / y_resolution.value[1]
+
+                    # Compute the pixel size and append it to the metadata
+                    if x_pixels_per_unit != 0:
+                        pixel_size_metadata["x"] = unit_size / x_pixels_per_unit
+
+                    if y_pixels_per_unit != 0:
+                        pixel_size_metadata["y"] = unit_size / y_pixels_per_unit
 
         return img_array, pixel_size_metadata, img_axes
+
 
     #--------------------------------------------------------------------------
     
@@ -138,11 +182,11 @@ class file_reading_functions:
         img = lif.get_image(image_index)
 
         # Get the voxel size
-        x_size, y_size, z_size, t_scale = img.info["scale"]
+        x_scale, y_scale, z_scale, t_scale = img.info["scale"]
         pixel_size_metadata = {
-            "z": z_size or 1,
-            "y": y_size or 1,
-            "x": x_size or 1,
+            "z": 1 / z_scale if z_scale else None,
+            "y": 1 / y_scale if y_scale else None,
+            "x": 1 / x_scale if x_scale else None,
         }
 
         # Get the dask array
@@ -301,8 +345,8 @@ class writing_functions:
             for m in range(M):
 
                 # for testing convenience
-                # if m + 1 > 1:
-                #     break
+                if m + 1 > 1:
+                    break
 
                 # Change the name of the output mosaic filename
                 mosaic_output_path = mosaic_folder / (
