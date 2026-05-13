@@ -404,12 +404,29 @@ class writing_functions:
                 # Get the dimensions
                 M, T, C, Z, Y, X = img_dims
 
-                # Start the tiff writing
-                if output_file_format == ".tif" or ".tiff":
+                for m in range(M):
+                    tif.write(
+                        data = tczyx_plane_access(img_array[m, :, :, :, :, :], T, C, Z),
+                        shape=(T, C, Z, Y, X),
+                        dtype=img_array.dtype,
+                        photometric="minisblack",
+                        metadata=get_ome_tiff_metadata(is_ome_tiff),
+                        compression="zlib",
+                        compressionargs={"level": 6},
+                        maxworkers=1,
+                    )
 
-                    if output_file_format == 
+            else:
 
-                    tif = tifffile.TiffWriter(output_path, bigtiff=True, ome=False)
+                T, C, Z, Y, X = img_dims
 
-                    for m in range()
-
+                tif.write(
+                    data=tczyx_plane_access(img_array, T, C, Z),
+                    shape=(T, C, Z, Y, X),
+                    dtype=img_array.dtype,
+                    photometric="minisblack",
+                    metadata=get_ome_tiff_metadata(is_ome_tiff),
+                    compression="zlib",
+                    compressionargs={"level": 6},
+                    maxworkers=1,
+                )

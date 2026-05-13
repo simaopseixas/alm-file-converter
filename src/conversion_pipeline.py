@@ -508,7 +508,11 @@ class file_conversion:
         """
 
         WRITER_FUNCTIONS = {
+            ".ome.tiff": writing_functions.write_ome_tiff,
+            ".ome.tif":  writing_functions.write_ome_tiff,
             ".ome.zarr": writing_functions.write_ome_zarr,
+            ".tif":      writing_functions.write_ome_tiff,
+            ".tiff":     writing_functions.write_ome_tiff,
         }
 
         if output_file_format in WRITER_FUNCTIONS:
