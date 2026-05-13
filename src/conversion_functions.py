@@ -89,11 +89,12 @@ class file_reading_functions:
 
             # If there is no OME metadata
             pixel_size_metadata = {
-                "z": 1, 
-                "y": 1,
-                "x": 1,
+                "z": None, 
+                "y": None,
+                "x": None,
             }
 
+            # Get OME voxel size metadata
             if tif.ome_metadata:
                 metadata = tifffile.xml2dict(tif.ome_metadata)
                 pixels = metadata["OME"]["Image"]["Pixels"]
@@ -103,6 +104,10 @@ class file_reading_functions:
                     "y": float(pixels.get("PhysicalSizeY", 1)),
                     "x": float(pixels.get("PhysicalSizeX", 1)),
                 }
+
+            # Get any available voxel size metadata for not OME files
+            if not ome_metadata:
+
 
         return img_array, pixel_size_metadata, img_axes
 
@@ -406,12 +411,18 @@ class writing_functions:
             if not is_ome_tiff:
                 return None
             
-            return {
-                "axes": "TCZYX",
-                "PhysicalSizeX": pixel_size_metadata["x"],
-                "PhysicalSizeY": pixel_size_metadata["y"],
-                "PhysicalSizeZ": pixel_size_metadata["z"],
-            }
+            metadata = { "axes": "TCZYX",}
+
+            if pixel_size_metadata["x"] is not None:
+                metadata["PhysicalSizeX"] = pixel_size_metadata["x"]
+
+            if pixel_size_metadata["y"] is not None:
+                metadata["PhysicalSizeY"] = pixel_size_metadata["y"]
+
+            if pixel_size_metadata["z"] is not None:
+                metadata["PhysicalSizeZ"] = pixel_size_metadata["z"]
+
+            return metadata
 
         # Initialize the writer
         with tifffile.TiffWriter(output_path, bigtiff=True, ome=is_ome_tiff) as tif:
