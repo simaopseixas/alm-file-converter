@@ -200,6 +200,7 @@ class file_conversion:
                     img_array.shape,
                     img_axes,
                     pixel_size_metadata,
+                    output_file_format
                 )
 
 
@@ -275,6 +276,7 @@ class file_conversion:
                     img_array.shape,
                     img_axes,
                     pixel_size_metadata,
+                    output_file_format,
                 )
 
 
@@ -311,7 +313,7 @@ class file_conversion:
             None,
             "Select Microscopy File",
             "",
-            "Microscopy files (*.ims *.lif *.ome.tiff)"
+            "Microscopy files (*.ims *.lif *.ome.tiff *.ome.tif *.tiff *.tif)"
         )
 
         if not file_path:
@@ -410,7 +412,7 @@ class file_conversion:
         folder = Path(folder_path)
 
         # Currently supported: .ims, .ome.zarr, .lif, ome.tiff
-        file_extensions = (".ome.tiff", ".ims", ".lif")
+        file_extensions = (".ome.tiff", ".ims", ".lif", ".tif", ".tiff", ".ome.tif")
         folder_extensions = (".ome.zarr", ".zarr")
 
         files = []
@@ -457,14 +459,17 @@ class file_conversion:
 
         input_file_formats = (
             ".ome.tiff",
+            ".ome.tif",
             ".ome.zarr",
+            ".tiff",
+            ".tif",
             ".ims",
             ".lif",
-            ".tiff",
             ".d2",
             ".zvi",
             ".zarr",
         )
+
 
         base_name = None
 
@@ -489,11 +494,15 @@ class file_conversion:
         input_name = input_file_path.name.lower()
 
         READER_FUNCTIONS = {
-            ".ims": file_reading_functions.read_ims_as_dask,
-            ".ome.tiff": file_reading_functions.read_ometiff_as_dask,
+            ".ome.tif": file_reading_functions.read_tifs_as_dask,
+            ".ome.tiff": file_reading_functions.read_tifs_as_dask,
             ".ome.zarr": file_reading_functions.read_omezarr_as_dask,
+            ".ims": file_reading_functions.read_ims_as_dask,
             ".lif": file_reading_functions.read_lif_as_dask,
             ".zarr": file_reading_functions.read_omezarr_as_dask,
+            ".tif": file_reading_functions.read_tifs_as_dask,
+            ".tiff": file_reading_functions.read_tifs_as_dask,
+
         }
 
         for input_file_format, reader_function in READER_FUNCTIONS.items():

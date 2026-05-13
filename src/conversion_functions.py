@@ -60,17 +60,19 @@ class file_reading_functions:
         img_axes = "TCZYX"
 
         return img_array, pixel_size_metadata, img_axes
+    
+    #--------------------------------------------------------------------------
 
 
-    def read_ometiff_as_dask(file_path):
+    def read_tifs_as_dask(file_path):
         """
-        Opens an ome.tiff file as a read-only zarr array.
-        Then converts it to a dask array.
+        Functions that handles .tif, .tiff, .ome.tif and .ome.tiff file formats.
+        Opens all of them as a read-only zarr array. Then converts it to a dask array.
         """
 
         # Read the ome.tiff as a zarr
-        ometiff_store = tifffile.imread(file_path, aszarr=True)
-        zarr_array = zarr.open(ometiff_store, mode="r")
+        tif_store = tifffile.imread(file_path, aszarr=True)
+        zarr_array = zarr.open(tif_store, mode="r")
 
         # Convert the zarr to a dask array
         img_array = writing_functions.as_dask_array(zarr_array)
@@ -78,25 +80,33 @@ class file_reading_functions:
         # Get the axes of the data
         img_axes = "".join(zarr_array.attrs.get("_ARRAY_DIMENSIONS", ""))
 
-        # Get the voxel metadata
-        if not img_axes:
-            with tifffile.TiffFile(file_path) as tif:
+        with tifffile.TiffFile(file_path) as tif:
+
+            # Fallback if there were no axes information available
+            if not img_axes:
                 series = tif.series[0]
                 img_axes = series.axes
 
-        with tifffile.TiffFile(file_path) as tif:
-            metadata = tifffile.xml2dict(tif.ome_metadata)
-            pixels = metadata["OME"]["Image"]["Pixels"]
+            # If there is no OME metadata
+            pixel_size_metadata = {
+                "z": 1, 
+                "y": 1,
+                "x": 1,
+            }
 
-        pixel_size_metadata = {
-            "z": float(pixels.get("PhysicalSizeZ", 1)),
-            "y": float(pixels.get("PhysicalSizeY", 1)),
-            "x": float(pixels.get("PhysicalSizeX", 1)),
-        }
+            if tif.ome_metadata:
+                metadata = tifffile.xml2dict(tif.ome_metadata)
+                pixels = metadata["OME"]["Image"]["Pixels"]
+
+                pixel_size_metadata = {
+                    "z": float(pixels.get("PhysicalSizeZ", 1)),
+                    "y": float(pixels.get("PhysicalSizeY", 1)),
+                    "x": float(pixels.get("PhysicalSizeX", 1)),
+                }
 
         return img_array, pixel_size_metadata, img_axes
-    
 
+    #--------------------------------------------------------------------------
     
     def read_lif_as_dask(file_path, image_index=0):
         """
@@ -170,6 +180,7 @@ class file_reading_functions:
 
         return img_array, pixel_size_metadata, img_axes
 
+    #--------------------------------------------------------------------------
 
     def read_omezarr_as_dask(file_path):
         """
@@ -223,6 +234,7 @@ class writing_functions:
 
         raise TypeError(f"Unsupported array type: {type(data)}")
     
+    #--------------------------------------------------------------------------
     
     def normalize_to_tczyx(img_array, img_axes):
         """
@@ -249,6 +261,7 @@ class writing_functions:
 
         return img_array
 
+    #--------------------------------------------------------------------------
     
     def write_ome_zarr(
             output_path,
@@ -348,6 +361,7 @@ class writing_functions:
                 ngff_version="0.4",
             )
 
+    #--------------------------------------------------------------------------
 
     def write_ome_tiff(
             output_path,
