@@ -114,11 +114,19 @@ class file_reading_functions:
         Then converts it to a dask array.
         """
 
-        # Define a helper function to build the dask array
-        def read_lif_plane(file_path, image_index, z, t, c, m):
+        def read_lif_zstack(file_path, image_index, t, c, m, Z):
+            """
+            Helper function to access the .lif data to build the dask array
+            """
             lif = LifFile(file_path)
             img = lif.get_image(image_index)
-            return np.asarray(img.get_frame(z=z, t=t, c=c, m=m))
+
+            planes = []
+
+            for z in range(Z):
+                planes.append(np.asarray(img.get_frame(z=z, t=t, c=c, m=m)))
+
+            return np.stack(planes, axis=0)
 
         # Access the lif
         lif = LifFile(file_path)
@@ -153,15 +161,10 @@ class file_reading_functions:
                 c_planes = []
 
                 for c in range(C):
-                    z_planes = []
-
-                    for z in range(Z):
-                        plane = dask.delayed(read_lif_plane)(file_path, image_index, z, t, c, m)
-                        plane = dask.array.from_delayed(plane, shape=(Y,X), dtype=dtype)
-                        z_planes.append(plane)
-
-                    c_stack = dask.array.stack(z_planes, axis=0)
-                    c_planes.append(c_stack)
+                    
+                    z_stack = dask.delayed(read_lif_zstack)(file_path, image_index, t, c, m, Z)
+                    z_stack = dask.array.from_delayed(z_stack, shape=(Z,Y,X), dtype=dtype)
+                    c_planes.append(z_stack)
 
                 t_stack = dask.array.stack(c_planes, axis=0)
                 t_planes.append(t_stack)
@@ -385,14 +388,15 @@ class writing_functions:
 
         def tczyx_plane_access(array, T, C, Z):
             """
-            Helper function that accesses (Y,X) data given (T,C,Z)
+            Helper function that accesses (Y,X) data given (T,C) and accessing the Z-stack
             """
 
             for t in range(T):
                 for c in range(C):
+                    z_stack = array[t, c, :, :, :].compute()
+
                     for z in range(Z):
-                        plane = array[t, c, z, :, :].compute()
-                        yield np.ascontiguousarray(plane)
+                        yield np.ascontiguousarray(z_stack[z, :, :])
 
         def get_ome_tiff_metadata(is_ome_tiff):
             """
