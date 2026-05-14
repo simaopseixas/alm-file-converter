@@ -409,9 +409,9 @@ class writing_functions:
 
             for m in range(M):
 
-                # # for testing convenience
-                # if m + 1 > 1:
-                #     break
+                # for testing convenience
+                if m + 1 > 2:
+                    break
 
                 # Change the name of the output mosaic filename
                 mosaic_output_path = mosaic_folder / (
@@ -572,9 +572,10 @@ class writing_functions:
             voxel_size_metadata,
     ):
         """
-        Function that takes a dask array as an input and writes its data into a .tif or .tiff file
+        Function that takes a dask array as an input and writes its data into a .tif or .tiff file.
         These .tif and .tiff files are Fiji/ImageJ compatible.
-        ImageJ hyperstacks use TZCYX order, which is handled by this writer
+        ImageJ hyperstacks use TZCYX order, which is handled by this writer.
+        ImageJ hyperstacks can also only handle 5D data. For this reason, multi-positions are written as different files.
         """
 
         # Get the output path
@@ -648,7 +649,14 @@ class writing_functions:
                 # Get the dimensions
                 M, T, C, Z, Y, X = img_dims
 
+                # Create the folder in which the positions will be saved in
+                mosaic_folder = output_path.with_suffix("")
+                mosaic_folder.mkdir(parents=True, exist_ok=True)
+
                 for m in range(M):
+                    mosaic_output_path = mosaic_folder / (
+                        f"{output_path.stem}_mosaic_{m + 1}{output_path.suffix}"
+                    )
 
                     # for testing convenience
                     if m + 1 > 4:

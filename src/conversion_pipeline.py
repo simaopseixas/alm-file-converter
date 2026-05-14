@@ -34,9 +34,9 @@ class file_conversion:
         """
 
         print()
-        print("-----------------------------------------------------------------------")
+        print("-----------------------------------------------------------------------------------------------")
         print("Batch Conversion:")
-        print("-----------------------------------------------------------------------")
+        print("-----------------------------------------------------------------------------------------------")
 
         # If the folder was not yet chosen, let the user choose it
         if input_file_paths is None or n_files is None or input_folder is None:
@@ -61,7 +61,7 @@ class file_conversion:
         for file_index, input_file_path in enumerate(input_file_paths, start=1):
 
             print()
-            print(f"Converting file {file_index}/{n_files}: {input_file_path.name} to {output_file}")
+            print(f"Converting file {file_index}/{n_files}: {input_file_path.name} to {output_file_format}")
 
             conversion_failed = False
             error_message = None
@@ -130,7 +130,7 @@ class file_conversion:
 
                 # Different prints for different cases
                 if img_axes == "MTCZYX" and output_file_format == ".ome.zarr":
-                    print(f"Saved files to: {output_file.name.removesuffix('.ome.zarr')}")
+                    print(f"Saved files to: {output_file.name.removesuffix('.ome.zarr', ".tif", ".tiff")}")
                 else:
                     print(f"Saved File: {output_file.name}")
 
@@ -147,13 +147,13 @@ class file_conversion:
         print("Conversion finished.")
         if failed_files == 0:
             print("All files were successfully converted.")
-            print("-----------------------------------------------------------------------")
+            print("-----------------------------------------------------------------------------------------------")
         else:
             print()
             print(f"Successful Files: {successful_files}/{n_files}")
             print(f"Failed Files: {failed_files}/{n_files}")
             print("Some files failed to convert. Check the conversion report for details.")
-            print("-----------------------------------------------------------------------")
+            print("-----------------------------------------------------------------------------------------------")
 
     #------------------------------------------
     # Single-File Conversion
@@ -173,8 +173,8 @@ class file_conversion:
             return
         
         print()
-        print("-----------------------------------------------------------------------")
-        print(f"Converting File: {input_file_path.name} to {output_file}")
+        print("-----------------------------------------------------------------------------------------------")
+        print(f"Converting File: {input_file_path.name} to {output_file_format}")
 
         conversion_failed = False
         error_message = None
@@ -234,14 +234,15 @@ class file_conversion:
             print(f"Failed to convert file: {input_file_path.name}")
             print(f"Error: {error_message}")
             print(error_traceback.rstrip())
-            print("-----------------------------------------------------------------------")
+            print("-----------------------------------------------------------------------------------------------")
         else:
             # Different prints for different cases
             if img_axes == "MTCZYX" and output_file_format == ".ome.zarr":
                 print(f"Saved files to: {output_file.name.removesuffix('.ome.zarr')}")
             else:
                 print(f"Saved File: {output_file.name}")
-            print("-----------------------------------------------------------------------")
+            print("-----------------------------------------------------------------------------------------------")
+            
 
 
     def single_omezarr_conversion(output_file_format, input_file_path=None):
@@ -259,8 +260,8 @@ class file_conversion:
             return
         
         print()
-        print("-----------------------------------------------------------------------")
-        print(f"Converting File: {input_file_path.name} to {output_file}")
+        print("-----------------------------------------------------------------------------------------------")
+        print(f"Converting File: {input_file_path.name} to {output_file_format}")
 
         conversion_failed = False
         error_message = None
@@ -320,14 +321,14 @@ class file_conversion:
             print(f"Failed to convert file: {input_file_path.name}")
             print(f"Error: {error_message}")
             print(error_traceback.rstrip())
-            print("-----------------------------------------------------------------------")
+            print("-----------------------------------------------------------------------------------------------")
         else:
             # Different prints for different cases
             if img_axes == "MTCZYX" and output_file_format == ".ome.zarr":
                 print(f"Saved files to: {output_file.name.removesuffix('.ome.zarr')}")
             else:
                 print(f"Saved File: {output_file.name}")
-            print("-----------------------------------------------------------------------")
+            print("-----------------------------------------------------------------------------------------------")
 
 
     ##############################################
