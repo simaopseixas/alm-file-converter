@@ -401,8 +401,10 @@ class writing_functions:
             M, T, C, Z, Y, X = img_dims
 
             # Create e new folder for the mosaics to be saved to
+            output_format_name = ".ome.zarr".replace(".", "")
+
             mosaic_folder = output_path.with_name(
-                output_path.name.removesuffix(".ome.zarr")
+                f"{output_path.name.removesuffix('.ome.zarr')}_{output_format_name}"
             )
 
             mosaic_folder.mkdir(parents=True, exist_ok=True)
@@ -532,8 +534,8 @@ class writing_functions:
                 for m in range(M):
 
                     # for testing convenience
-                    # if m + 1 > 4:
-                    #     break
+                    if m + 1 > 4:
+                        break
 
                     ome_tif.write(
                         data = tczyx_plane_access(img_array[m, :, :, :, :, :], T, C, Z),
@@ -640,28 +642,36 @@ class writing_functions:
                 1 / voxel_size_metadata["y"],
             )
         
-        # Initialize the writer
-        with tifffile.TiffWriter(output_path, imagej=True) as tif:
+
         
-            # Check the axes of the input file to write accordingly
-            if img_axes == "MTCZYX":
+        # Check the axes of the input file to write accordingly
+        if img_axes == "MTCZYX":
 
-                # Get the dimensions
-                M, T, C, Z, Y, X = img_dims
+            # Get the dimensions
+            M, T, C, Z, Y, X = img_dims
 
-                # Create the folder in which the positions will be saved in
-                mosaic_folder = output_path.with_suffix("")
-                mosaic_folder.mkdir(parents=True, exist_ok=True)
+            # Create the folder in which the positions will be saved in
+            output_format_name = output_path.suffix.replace(".", "")
 
-                for m in range(M):
-                    mosaic_output_path = mosaic_folder / (
-                        f"{output_path.stem}_mosaic_{m + 1}{output_path.suffix}"
-                    )
+            mosaic_folder = output_path.with_name(
+                f"{output_path.name.removesuffix(output_path.suffix)}_{output_format_name}"
+            )
 
-                    # for testing convenience
-                    if m + 1 > 4:
-                        break
+            mosaic_folder.mkdir(parents=True, exist_ok=True)
 
+            for m in range(M):
+
+                # for testing convenience
+                if m + 1 > 4:
+                    break
+                
+
+                mosaic_output_path = mosaic_folder / (
+                    f"{output_path.stem}_mosaic_{m + 1}{output_path.suffix}"
+                )
+
+                # Initialize the writer
+                with tifffile.TiffWriter(mosaic_output_path, imagej=True) as tif:
                     tif.write(
                         data=tzcyx_plane_access(img_array[m, :, :, :, :, :], T, C, Z),
                         shape=(T, Z, C, Y, X),
@@ -671,10 +681,12 @@ class writing_functions:
                         resolution=get_resolution(),
                     )
 
-            else:
+        else:
 
-                T, C, Z, Y, X = img_dims
+            T, C, Z, Y, X = img_dims
 
+            # Initialize the writer
+            with tifffile.TiffWriter(output_path, imagej=True) as tif:
                 tif.write(
                     data=tzcyx_plane_access(img_array, T, C, Z),
                     shape=(T, Z, C, Y, X),

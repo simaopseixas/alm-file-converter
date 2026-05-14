@@ -129,8 +129,8 @@ class file_conversion:
                 successful_files += 1
 
                 # Different prints for different cases
-                if img_axes == "MTCZYX" and output_file_format == ".ome.zarr":
-                    print(f"Saved files to: {output_file.name.removesuffix('.ome.zarr', ".tif", ".tiff")}")
+                if img_axes == "MTCZYX" and output_file_format in (".ome.zarr", ".tif", ".tiff"):
+                    print(f"Saved files to: {output_file.name.removesuffix(output_file_format)}")
                 else:
                     print(f"Saved File: {output_file.name}")
 
