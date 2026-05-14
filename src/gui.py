@@ -182,6 +182,10 @@ class ConverterWidget(QWidget):
         # Output file format ComboBox
         self.format_combobox = QComboBox()
         self.format_combobox.addItems([".ome.tiff", ".ome.tif", ".ome.zarr", ".tiff", ".tif", ])
+            # Save the last used format as as setting
+        last_format = self.settings.value("output_file_format", ".ome.tiff", type=str)
+        self.format_combobox.setCurrentText(last_format)
+        self.format_combobox.currentTextChanged.connect(self.save_format_setting)
 
         # Batch Procesing Button
         self.choose_button = QPushButton()
@@ -258,6 +262,13 @@ class ConverterWidget(QWidget):
         to save it for the next session of the program
         """
         self.settings.setValue("batch_processing_enabled", checked)
+
+    def save_format_setting(self, output_file_format):
+        """
+        Updates the output file format combo-box value as a setting in the computer
+        to be saved for the next session
+        """
+        self.settings.setValue("output_file_format", output_file_format)
 
     def update_button_text(self, batch_enabled: bool):
         """
