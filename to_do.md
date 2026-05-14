@@ -2,9 +2,6 @@
 
 ## Other things
 
-- Update the README
-- Comment normalization function
-
 ## File format support
 
 ## Metadata
