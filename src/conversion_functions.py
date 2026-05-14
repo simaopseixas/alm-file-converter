@@ -53,13 +53,17 @@ class file_reading_functions:
         # Get the closing function
         img_array.close_after_write = ims_store.ims.close
 
-        # Get voxel data
-        z_size, y_size, x_size = ims_store.ims.resolution
+        # Get voxel data from ims physical extents given by the metadata
+        Z, Y, X = img_array.shape[-3:]
+
+        x_extent = ( ims_store.ims.read_numerical_dataset_attr("ExtMax0") - ims_store.ims.read_numerical_dataset_attr("ExtMin0") )
+        y_extent = ( ims_store.ims.read_numerical_dataset_attr("ExtMax1") - ims_store.ims.read_numerical_dataset_attr("ExtMin1") )
+        z_extent = ( ims_store.ims.read_numerical_dataset_attr("ExtMax2") - ims_store.ims.read_numerical_dataset_attr("ExtMin2") )
 
         voxel_size_metadata = {
-            "z": z_size if z_size else None,
-            "y": y_size if y_size else None,
-            "x": x_size if x_size else None,
+            "z": z_extent / Z if Z > 1 else None,
+            "y": y_extent / Y if Y > 1 else None,
+            "x": x_extent / X if X > 1 else None,
         }
 
         img_axes = "TCZYX"
