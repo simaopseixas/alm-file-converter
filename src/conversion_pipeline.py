@@ -61,7 +61,7 @@ class file_conversion:
         for file_index, input_file_path in enumerate(input_file_paths, start=1):
 
             print()
-            print(f"Converting file {file_index}/{n_files}: {input_file_path.name}")
+            print(f"Converting file {file_index}/{n_files}: {input_file_path.name} to {output_file}")
 
             conversion_failed = False
             error_message = None
@@ -174,7 +174,7 @@ class file_conversion:
         
         print()
         print("-----------------------------------------------------------------------")
-        print(f"Converting File: {input_file_path.name}")
+        print(f"Converting File: {input_file_path.name} to {output_file}")
 
         conversion_failed = False
         error_message = None
@@ -260,7 +260,7 @@ class file_conversion:
         
         print()
         print("-----------------------------------------------------------------------")
-        print(f"Converting File: {input_file_path.name}")
+        print(f"Converting File: {input_file_path.name} to {output_file}")
 
         conversion_failed = False
         error_message = None

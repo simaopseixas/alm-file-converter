@@ -409,9 +409,9 @@ class writing_functions:
 
             for m in range(M):
 
-                # for testing convenience
-                if m + 1 > 1:
-                    break
+                # # for testing convenience
+                # if m + 1 > 1:
+                #     break
 
                 # Change the name of the output mosaic filename
                 mosaic_output_path = mosaic_folder / (
@@ -650,6 +650,10 @@ class writing_functions:
 
                 for m in range(M):
 
+                    # for testing convenience
+                    if m + 1 > 4:
+                        break
+
                     tif.write(
                         data=tzcyx_plane_access(img_array[m, :, :, :, :, :], T, C, Z),
                         shape=(T, Z, C, Y, X),
@@ -673,12 +677,3 @@ class writing_functions:
                 )
 
     #--------------------------------------------------------------------------
-
-
-# if __name__ == "__main__":
-
-#     path = r"C:\Users\simao\Desktop\Repositories\Microscopy_File_Converter\test-conversions\nd2_and_zvi\Argo_Matrix of Crosses_60X_20260428-1505.nd2"
-
-#     img_array, voxel_size_metadata, img_axes = file_reading_functions.read_nd2_as_dask(path)
-
-#     print(img_array, voxel_size_metadata, img_axes)
