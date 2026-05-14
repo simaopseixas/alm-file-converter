@@ -439,6 +439,13 @@ class writing_functions:
         """
         
         output_path = Path(output_path)
+
+        # Compute the voxel size metadata to write
+        scale = {
+            "z": voxel_size_metadata["z"] if voxel_size_metadata["z"] is not None else 1,
+            "y": voxel_size_metadata["y"] if voxel_size_metadata["y"] is not None else 1,
+            "x": voxel_size_metadata["x"] if voxel_size_metadata["x"] is not None else 1,
+        }
         
         # If the file that was read has 6 available dimensions, meaning Mosaics + TCZYX
         if img_axes == "MTCZYX":
@@ -469,11 +476,7 @@ class writing_functions:
                 sim = si_utils.get_sim_from_array(
                     img_array[m,:,:,:,:,:],
                     dims = ["t", "c", "z", "y", "x"],
-                    scale={
-                        "z": voxel_size_metadata["z"],
-                        "y": voxel_size_metadata["y"],
-                        "x": voxel_size_metadata["x"],
-                    },
+                    scale=scale,
                     translation={
                         "z": 0,
                         "y": 0,
@@ -504,11 +507,7 @@ class writing_functions:
             sim = si_utils.get_sim_from_array(
                 img_array,
                 dims = ["t", "c", "z", "y", "x"],
-                scale={
-                    "z": voxel_size_metadata["z"],
-                    "y": voxel_size_metadata["y"],
-                    "x": voxel_size_metadata["x"],
-                },
+                scale=scale,
                 translation={
                     "z": 0,
                     "y": 0,
@@ -589,8 +588,8 @@ class writing_functions:
                         dtype=img_array.dtype,
                         photometric="minisblack",
                         metadata=ome_metadata,
-                        compression="zlib",
-                        compressionargs={"level": 6},
+                        # compression="zlib",
+                        # compressionargs={"level": 6},
                         maxworkers=1,
                     )
 
@@ -604,8 +603,8 @@ class writing_functions:
                     dtype=img_array.dtype,
                     photometric="minisblack",
                     metadata=ome_metadata,
-                    compression="zlib",
-                    compressionargs={"level": 6},
+                    # compression="zlib",
+                    # compressionargs={"level": 6},
                     maxworkers=1,
                 )
 

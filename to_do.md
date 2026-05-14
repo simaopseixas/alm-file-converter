@@ -2,6 +2,9 @@
 
 ## Other things
 
+- Maybe chagne the omezarr writing protocol, since the multiview-stitcher sim is taking some time
+- Add a compression option when the writing is in .ome.tif or .ome.tiff
+
 ## File format support
 
 ## Metadata
