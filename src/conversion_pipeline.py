@@ -345,7 +345,7 @@ class file_conversion:
             None,
             "Select Microscopy File",
             "",
-            "Microscopy files (*.ims *.lif *.ome.tiff *.ome.tif *.tiff *.tif *.nd2)"
+            "Microscopy files (*.ims *.lif *.ome.tiff *.ome.tif *.tiff *.tif *.nd2 *.zvi)"
         )
 
         if not file_path:
@@ -444,7 +444,7 @@ class file_conversion:
         folder = Path(folder_path)
 
         # Currently supported: .ims, .ome.zarr, .lif, ome.tiff
-        file_extensions = (".ome.tiff", ".ome.tif", ".ims", ".lif", ".tif", ".tiff", ".nd2")
+        file_extensions = (".ome.tiff", ".ome.tif", ".ims", ".lif", ".tif", ".tiff", ".nd2", ".zvi")
         folder_extensions = (".ome.zarr", ".zarr")
 
         files = []
@@ -499,6 +499,7 @@ class file_conversion:
             ".lif",
             ".nd2",
             ".zarr",
+            ".zvi",
         )
 
 
@@ -534,6 +535,7 @@ class file_conversion:
             ".tif": file_reading_functions.read_tifs_as_dask,
             ".tiff": file_reading_functions.read_tifs_as_dask,
             ".nd2": file_reading_functions.read_nd2_as_dask,
+            ".zvi": file_reading_functions.read_zvi_as_dask,
 
         }
 

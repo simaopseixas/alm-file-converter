@@ -158,9 +158,9 @@ class ConverterWidget(QWidget):
         )
         self.tooltip_manager.attach_tooltip(
             self.batch_info_label,
-            "This program currently has support for:\n" \
-            ".ims, .lif, .ome.tif, .ome.tiff, .ome.zarr,\n" \
-            ".tif, .tiff, .nd2, .zarr.\n" \
+            "This program has reading support for:\n" \
+            ".tif, .tiff, .ome.tif, .ome.tiff,\n" \
+            ".zarr, .ome.zarr, .ims, .lif, .nd2, .zvi.\n" \
             "\n" \
             "To access this project's github for more\n" \
             "information, click this button."

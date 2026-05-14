@@ -25,51 +25,14 @@ import nd2
 import contextlib
 import os
 
+from bioio import BioImage
+import bioio_bioformats
+
 #################################################################
 # File Reading Functions
 
 class file_reading_functions:
 
-    def read_ims_as_dask(
-        file_path,
-        resolution_level=0,
-    ):
-        """
-        Opens an Imaris .ims file as a read-only zarr array.
-        Then converts it to a dask array.
-        """
-
-        # Read the ims as a zarr
-        ims_store = imaris_ims_file_reader.ims(
-            str(file_path),
-            ResolutionLevelLock=resolution_level,
-            aszarr=True,
-        )
-        img_array = zarr.open(ims_store, mode="r")
-
-        # Converts the zarr to dask
-        img_array = writing_functions.as_dask_array(img_array)
-
-        # Get the closing function
-        img_array.close_after_write = ims_store.ims.close
-
-        # Get voxel data from ims physical extents given by the metadata
-        Z, Y, X = img_array.shape[-3:]
-
-        x_extent = ( ims_store.ims.read_numerical_dataset_attr("ExtMax0") - ims_store.ims.read_numerical_dataset_attr("ExtMin0") )
-        y_extent = ( ims_store.ims.read_numerical_dataset_attr("ExtMax1") - ims_store.ims.read_numerical_dataset_attr("ExtMin1") )
-        z_extent = ( ims_store.ims.read_numerical_dataset_attr("ExtMax2") - ims_store.ims.read_numerical_dataset_attr("ExtMin2") )
-
-        voxel_size_metadata = {
-            "z": z_extent / Z if Z > 1 else None,
-            "y": y_extent / Y if Y > 1 else None,
-            "x": x_extent / X if X > 1 else None,
-        }
-
-        img_axes = "TCZYX"
-
-        return img_array, voxel_size_metadata, img_axes
-    
     #--------------------------------------------------------------------------
 
 
@@ -186,7 +149,78 @@ class file_reading_functions:
 
 
         return img_array, voxel_size_metadata, img_axes
+    
+    #--------------------------------------------------------------------------
 
+    def read_omezarr_as_dask(file_path):
+        """
+        Opens a zarr array in reading.
+        Then converts it to a dask array.
+        """
+
+        # Access the ome.zarr in reading mode
+        sim = ngff_utils.read_sim_from_ome_zarr(file_path, resolution_level=0)
+        img_array = sim.data
+
+        # Get the voxel size data
+        spacing = si_utils.get_spacing_from_sim(sim)
+
+        voxel_size_metadata = {
+            "z": spacing.get("z", 1),
+            "y": spacing.get("y", 1),
+            "x": spacing.get("x", 1),
+        }
+
+        # Get the available axes of the data
+        img_axes = "".join(sim.dims).upper()
+
+
+        return img_array, voxel_size_metadata, img_axes
+    
+    
+    #--------------------------------------------------------------------------
+
+
+    def read_ims_as_dask(
+        file_path,
+        resolution_level=0,
+    ):
+        """
+        Opens an Imaris .ims file as a read-only zarr array.
+        Then converts it to a dask array.
+        """
+
+        # Read the ims as a zarr
+        ims_store = imaris_ims_file_reader.ims(
+            str(file_path),
+            ResolutionLevelLock=resolution_level,
+            aszarr=True,
+        )
+        img_array = zarr.open(ims_store, mode="r")
+
+        # Converts the zarr to dask
+        img_array = writing_functions.as_dask_array(img_array)
+
+        # Get the closing function
+        img_array.close_after_write = ims_store.ims.close
+
+        # Get voxel data from ims physical extents given by the metadata
+        Z, Y, X = img_array.shape[-3:]
+
+        x_extent = ( ims_store.ims.read_numerical_dataset_attr("ExtMax0") - ims_store.ims.read_numerical_dataset_attr("ExtMin0") )
+        y_extent = ( ims_store.ims.read_numerical_dataset_attr("ExtMax1") - ims_store.ims.read_numerical_dataset_attr("ExtMin1") )
+        z_extent = ( ims_store.ims.read_numerical_dataset_attr("ExtMax2") - ims_store.ims.read_numerical_dataset_attr("ExtMin2") )
+
+        voxel_size_metadata = {
+            "z": z_extent / Z if Z > 1 else None,
+            "y": y_extent / Y if Y > 1 else None,
+            "x": x_extent / X if X > 1 else None,
+        }
+
+        img_axes = "TCZYX"
+
+        return img_array, voxel_size_metadata, img_axes
+    
 
     #--------------------------------------------------------------------------
     
@@ -265,32 +299,6 @@ class file_reading_functions:
 
         return img_array, voxel_size_metadata, img_axes
 
-    #--------------------------------------------------------------------------
-
-    def read_omezarr_as_dask(file_path):
-        """
-        Opens a zarr array in reading.
-        Then converts it to a dask array.
-        """
-
-        # Access the ome.zarr in reading mode
-        sim = ngff_utils.read_sim_from_ome_zarr(file_path, resolution_level=0)
-        img_array = sim.data
-
-        # Get the voxel size data
-        spacing = si_utils.get_spacing_from_sim(sim)
-
-        voxel_size_metadata = {
-            "z": spacing.get("z", 1),
-            "y": spacing.get("y", 1),
-            "x": spacing.get("x", 1),
-        }
-
-        # Get the available axes of the data
-        img_axes = "".join(sim.dims).upper()
-
-
-        return img_array, voxel_size_metadata, img_axes
     
     #--------------------------------------------------------------------------
 
@@ -322,6 +330,40 @@ class file_reading_functions:
             "y": voxel_size.y if voxel_size.y else None,
             "x": voxel_size.x if voxel_size.x else None,
         }
+
+        return img_array, voxel_size_metadata, img_axes
+    
+    #--------------------------------------------------------------------------
+
+    def read_zvi_as_dask(file_path):
+        """
+        Opens a Zeiss .zvi as a dask array.
+        This function doesn't function lazily. Since .zvi doesn't support lazy reading, 
+        the whole dataset is loaded into memory as a numpy array and converted to dask.
+        """
+
+        # Access the .zvi file
+        img = BioImage(file_path, reader=bioio_bioformats.Reader)
+
+        # Get the data into numpy
+        img_array = img.get_image_data("TCZYX")
+
+        # Get voxel size metadata, if accessible through Bio-Formats
+        voxel_sizes = img.physical_pixel_sizes
+
+        voxel_size_metadata = {
+            "z": voxel_sizes.Z,
+            "y": voxel_sizes.Y,
+            "x": voxel_sizes.X
+        }
+
+        # Convert the numpy array to dask, to make it compatible with the conversion pipeline
+        img_array = dask.array.from_array(
+            img_array,
+            chunks=(1,1,1,img_array.shape[-2],img_array.shape[-1])
+        )
+
+        img_axes = "TCZYX"
 
         return img_array, voxel_size_metadata, img_axes
     
