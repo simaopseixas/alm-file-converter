@@ -8,9 +8,9 @@ from gui import ConverterWidget
 
 
 if __name__ == "__main__":
-    print("=============================")
-    print("ALM Microscopy File Converter")
-    print("=============================")
+    print("==============================")
+    print("      ALM File Converter")
+    print("==============================")
 
     app = QApplication(sys.argv)
 

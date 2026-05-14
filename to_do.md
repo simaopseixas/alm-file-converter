@@ -7,6 +7,8 @@
 
 ## File format support
 
+- fix tif and tiff axes detection
+- fix tif and tiff voxel size metadata
 - Add .nd2 reading support
 - Add .zvi reading support
 

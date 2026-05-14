@@ -80,7 +80,7 @@ class file_conversion:
                     reader_function = file_conversion.get_reader_function(input_file_path)
 
                     # Apply the reader function to read the file
-                    img_array, pixel_size_metadata, img_axes = reader_function(input_file_path)
+                    img_array, voxel_size_metadata, img_axes = reader_function(input_file_path)
 
                     # Get the closing function if it is an .ims or an .nd2
                     close_after_write = getattr(img_array, "close_after_write", None)
@@ -97,8 +97,7 @@ class file_conversion:
                         img_array,
                         img_array.shape,
                         img_axes,
-                        pixel_size_metadata,
-                        output_file_format
+                        voxel_size_metadata,
                     )
 
                     # Close any open nd2 or ims file
@@ -191,7 +190,7 @@ class file_conversion:
                 reader_function = file_conversion.get_reader_function(input_file_path)
 
                 # Apply the reader function to read the file
-                img_array, pixel_size_metadata, img_axes = reader_function(input_file_path)
+                img_array, voxel_size_metadata, img_axes = reader_function(input_file_path)
 
                 # Get the closing function if it is an .ims or an .nd2
                 close_after_write = getattr(img_array, "close_after_write", None)
@@ -214,8 +213,7 @@ class file_conversion:
                     img_array,
                     img_array.shape,
                     img_axes,
-                    pixel_size_metadata,
-                    output_file_format
+                    voxel_size_metadata,
                 )
 
                 # Close any open nd2 or ims file
@@ -278,7 +276,7 @@ class file_conversion:
                 reader_function = file_conversion.get_reader_function(input_file_path)
 
                 # Apply the reader function to read the file
-                img_array, pixel_size_metadata, img_axes = reader_function(input_file_path)
+                img_array, voxel_size_metadata, img_axes = reader_function(input_file_path)
 
                 # Get the closing function if it is an .ims or an .nd2
                 close_after_write = getattr(img_array, "close_after_write", None)
@@ -301,8 +299,7 @@ class file_conversion:
                     img_array,
                     img_array.shape,
                     img_axes,
-                    pixel_size_metadata,
-                    output_file_format,
+                    voxel_size_metadata,
                 )
 
                 # Close any open nd2 or ims file
@@ -554,8 +551,8 @@ class file_conversion:
             ".ome.tiff": writing_functions.write_ome_tiff,
             ".ome.tif":  writing_functions.write_ome_tiff,
             ".ome.zarr": writing_functions.write_ome_zarr,
-            ".tif":      writing_functions.write_ome_tiff,
-            ".tiff":     writing_functions.write_ome_tiff,
+            ".tif":      writing_functions.write_tiff,
+            ".tiff":     writing_functions.write_tiff,
         }
 
         if output_file_format in WRITER_FUNCTIONS:

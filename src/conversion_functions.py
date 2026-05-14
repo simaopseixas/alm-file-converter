@@ -56,7 +56,7 @@ class file_reading_functions:
         # Get voxel data
         z_size, y_size, x_size = ims_store.ims.resolution
 
-        pixel_size_metadata = {
+        voxel_size_metadata = {
             "z": z_size if z_size else None,
             "y": y_size if y_size else None,
             "x": x_size if x_size else None,
@@ -64,7 +64,7 @@ class file_reading_functions:
 
         img_axes = "TCZYX"
 
-        return img_array, pixel_size_metadata, img_axes
+        return img_array, voxel_size_metadata, img_axes
     
     #--------------------------------------------------------------------------
 
@@ -94,7 +94,7 @@ class file_reading_functions:
                 img_axes = series.axes
 
             # If there is no OME metadata
-            pixel_size_metadata = {
+            voxel_size_metadata = {
                 "z": None, 
                 "y": None,
                 "x": None,
@@ -106,13 +106,13 @@ class file_reading_functions:
                 pixels = metadata["OME"]["Image"]["Pixels"]
 
                 if pixels.get("PhysicalSizeZ") is not None:
-                    pixel_size_metadata["z"] = float(pixels["PhysicalSizeZ"])
+                    voxel_size_metadata["z"] = float(pixels["PhysicalSizeZ"])
 
                 if pixels.get("PhysicalSizeY") is not None:
-                    pixel_size_metadata["y"] = float(pixels["PhysicalSizeY"])
+                    voxel_size_metadata["y"] = float(pixels["PhysicalSizeY"])
 
                 if pixels.get("PhysicalSizeX") is not None:
-                    pixel_size_metadata["x"] = float(pixels["PhysicalSizeX"])
+                    voxel_size_metadata["x"] = float(pixels["PhysicalSizeX"])
 
             # Get any available voxel size metadata for not OME files
             if not tif.ome_metadata:
@@ -122,7 +122,7 @@ class file_reading_functions:
 
                 # Get the Zspacing if it exists
                 if imagej_metadata.get("spacing") is not None:
-                    pixel_size_metadata["z"] = float(imagej_metadata["spacing"])
+                    voxel_size_metadata["z"] = float(imagej_metadata["spacing"])
 
                 page = tif.pages[0]
 
@@ -175,13 +175,13 @@ class file_reading_functions:
                     if unit_size is not None:
 
                         if x_pixels_per_unit != 0:
-                            pixel_size_metadata["x"] = unit_size / x_pixels_per_unit
+                            voxel_size_metadata["x"] = unit_size / x_pixels_per_unit
 
                         if y_pixels_per_unit != 0:
-                            pixel_size_metadata["y"] = unit_size / y_pixels_per_unit
+                            voxel_size_metadata["y"] = unit_size / y_pixels_per_unit
 
 
-        return img_array, pixel_size_metadata, img_axes
+        return img_array, voxel_size_metadata, img_axes
 
 
     #--------------------------------------------------------------------------
@@ -212,7 +212,7 @@ class file_reading_functions:
 
         # Get the voxel size
         x_scale, y_scale, z_scale, t_scale = img.info["scale"]
-        pixel_size_metadata = {
+        voxel_size_metadata = {
             "z": 1 / z_scale if z_scale else None,
             "y": 1 / y_scale if y_scale else None,
             "x": 1 / x_scale if x_scale else None,
@@ -259,7 +259,7 @@ class file_reading_functions:
             img_array = img_array[0]
             img_axes = "TCZYX"
 
-        return img_array, pixel_size_metadata, img_axes
+        return img_array, voxel_size_metadata, img_axes
 
     #--------------------------------------------------------------------------
 
@@ -276,7 +276,7 @@ class file_reading_functions:
         # Get the voxel size data
         spacing = si_utils.get_spacing_from_sim(sim)
 
-        pixel_size_metadata = {
+        voxel_size_metadata = {
             "z": spacing.get("z", 1),
             "y": spacing.get("y", 1),
             "x": spacing.get("x", 1),
@@ -286,7 +286,7 @@ class file_reading_functions:
         img_axes = "".join(sim.dims).upper()
 
 
-        return img_array, pixel_size_metadata, img_axes
+        return img_array, voxel_size_metadata, img_axes
     
     #--------------------------------------------------------------------------
 
@@ -313,13 +313,13 @@ class file_reading_functions:
         voxel_size = nd2_file.voxel_size()
 
         # Convert to metadata dictionary
-        pixel_size_metadata = {
+        voxel_size_metadata = {
             "z": voxel_size.z if voxel_size.z else None,
             "y": voxel_size.y if voxel_size.y else None,
             "x": voxel_size.x if voxel_size.x else None,
         }
 
-        return img_array, pixel_size_metadata, img_axes
+        return img_array, voxel_size_metadata, img_axes
     
 #################################################################
 # File Writing Functions
@@ -382,8 +382,7 @@ class writing_functions:
             img_array,
             img_dims,
             img_axes,
-            pixel_size_metadata,
-            output_file_format,
+            voxel_size_metadata,
     ):
         """
         Function that takes a dask array as an input and writes its data into an .ome.zarr file
@@ -419,9 +418,9 @@ class writing_functions:
                     img_array[m,:,:,:,:,:],
                     dims = ["t", "c", "z", "y", "x"],
                     scale={
-                        "z": pixel_size_metadata["z"],
-                        "y": pixel_size_metadata["y"],
-                        "x": pixel_size_metadata["x"],
+                        "z": voxel_size_metadata["z"],
+                        "y": voxel_size_metadata["y"],
+                        "x": voxel_size_metadata["x"],
                     },
                     translation={
                         "z": 0,
@@ -454,9 +453,9 @@ class writing_functions:
                 img_array,
                 dims = ["t", "c", "z", "y", "x"],
                 scale={
-                    "z": pixel_size_metadata["z"],
-                    "y": pixel_size_metadata["y"],
-                    "x": pixel_size_metadata["x"],
+                    "z": voxel_size_metadata["z"],
+                    "y": voxel_size_metadata["y"],
+                    "x": voxel_size_metadata["x"],
                 },
                 translation={
                     "z": 0,
@@ -482,24 +481,19 @@ class writing_functions:
             img_array,
             img_dims,
             img_axes,
-            pixel_size_metadata,
-            output_file_format
+            voxel_size_metadata,
     ):
         """
-        Function that takes a dask array as an input and writes its data into an .ome.tiff file
+        Function that takes a dask array as an input and writes its data into an .ome.tif or .ome.tiff file
         """
 
         # Get the output path
         output_path = Path(output_path)
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
-        # Verify if the chosen output file format is OME
-        output_file_format = output_file_format.lower()
-        is_ome_tiff = output_file_format in (".ome.tif", ".ome.tiff")
-
         def tczyx_plane_access(array, T, C, Z):
             """
-            Helper function that accesses (Y,X) data given (T,C) and accessing the Z-stack
+            Helper function that accesses (Y,X) data given (T,C), computing the Z-stack
             """
 
             for t in range(T):
@@ -509,29 +503,21 @@ class writing_functions:
                     for z in range(Z):
                         yield np.ascontiguousarray(z_stack[z, :, :])
 
-        def get_ome_tiff_metadata(is_ome_tiff):
-            """
-            Helper function that returns the voxel size metadata if the output image is an OME
-            """
 
-            if not is_ome_tiff:
-                return None
-            
-            metadata = { "axes": "TCZYX",}
+        # Create the OME metadata dictionary
+        ome_metadata = { "axes": "TCZYX",}
 
-            if pixel_size_metadata["x"] is not None:
-                metadata["PhysicalSizeX"] = pixel_size_metadata["x"]
+        if voxel_size_metadata["x"] is not None:
+            ome_metadata["PhysicalSizeX"] = voxel_size_metadata["x"]
 
-            if pixel_size_metadata["y"] is not None:
-                metadata["PhysicalSizeY"] = pixel_size_metadata["y"]
+        if voxel_size_metadata["y"] is not None:
+            ome_metadata["PhysicalSizeY"] = voxel_size_metadata["y"]
 
-            if pixel_size_metadata["z"] is not None:
-                metadata["PhysicalSizeZ"] = pixel_size_metadata["z"]
-
-            return metadata
+        if voxel_size_metadata["z"] is not None:
+            ome_metadata["PhysicalSizeZ"] = voxel_size_metadata["z"]
 
         # Initialize the writer
-        with tifffile.TiffWriter(output_path, bigtiff=True, ome=is_ome_tiff) as tif:
+        with tifffile.TiffWriter(output_path, bigtiff=True, ome=True) as ome_tif:
 
             # Check the axes of the input file to write accordingly
             if img_axes == "MTCZYX":
@@ -542,15 +528,15 @@ class writing_functions:
                 for m in range(M):
 
                     # for testing convenience
-                    if m + 1 > 4:
-                        break
+                    # if m + 1 > 4:
+                    #     break
 
-                    tif.write(
+                    ome_tif.write(
                         data = tczyx_plane_access(img_array[m, :, :, :, :, :], T, C, Z),
                         shape=(T, C, Z, Y, X),
                         dtype=img_array.dtype,
                         photometric="minisblack",
-                        metadata=get_ome_tiff_metadata(is_ome_tiff),
+                        metadata=ome_metadata,
                         compression="zlib",
                         compressionargs={"level": 6},
                         maxworkers=1,
@@ -560,21 +546,135 @@ class writing_functions:
 
                 T, C, Z, Y, X = img_dims
 
-                tif.write(
+                ome_tif.write(
                     data=tczyx_plane_access(img_array, T, C, Z),
                     shape=(T, C, Z, Y, X),
                     dtype=img_array.dtype,
                     photometric="minisblack",
-                    metadata=get_ome_tiff_metadata(is_ome_tiff),
+                    metadata=ome_metadata,
                     compression="zlib",
                     compressionargs={"level": 6},
                     maxworkers=1,
                 )
 
+
+    #--------------------------------------------------------------------------
+
+    def write_tiff(
+            output_path,
+            img_array,
+            img_dims,
+            img_axes,
+            voxel_size_metadata,
+    ):
+        """
+        Function that takes a dask array as an input and writes its data into a .tif or .tiff file
+        These .tif and .tiff files are Fiji/ImageJ compatible.
+        ImageJ hyperstacks use TZCYX order, which is handled by this writer
+        """
+
+        # Get the output path
+        output_path = Path(output_path)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        def tzcyx_plane_access(array, T, C, Z):
+            """
+            Helper function that accesses (Y,X) data given (T,Z), computing the C-Stack
+            """
+
+            for t in range(T):
+                for z in range(Z):
+                    c_stack = array[t, :, z, :, :].compute()
+
+                    for c in range(C):
+                        yield np.ascontiguousarray(c_stack[c, :, :])
+
+        def get_fiji_metadata(T, C, Z, voxel_size_metadata):
+            """
+            Helper function that computes axes and voxel size metadata for Fiji/ImageJ
+            """
+
+            # Start the dictionary
+            metadata = {
+                "axes": "TZCYX",
+                "channels": C,
+                "slices": Z,
+                "frames": T,
+                "hyperstack": True,
+                "mode": "composite",
+            }
+
+            if voxel_size_metadata["z"] is not None:
+                metadata["spacing"] = voxel_size_metadata["z"]
+
+            if (
+                voxel_size_metadata["z"] is not None
+                or voxel_size_metadata["y"] is not None
+                or voxel_size_metadata["x"] is not None
+                ):
+
+                # Assume micrometer unit since the reader converts any unit to micrometers
+                metadata["unit"] = "um"
+
+            return metadata
+        
+        def get_resolution():
+            """
+            Helper function that gets the resolution in pixels/micrometer
+            since that is the resolution that Fiji/ImageJ natively recognizes
+            """
+
+            if voxel_size_metadata["x"] is None or voxel_size_metadata["y"] is None:
+                return None
+            
+            if voxel_size_metadata["x"] == 0 or voxel_size_metadata["y"] == 0:
+                return None
+            
+            return (
+                1 / voxel_size_metadata["x"],
+                1 / voxel_size_metadata["y"],
+            )
+        
+        # Initialize the writer
+        with tifffile.TiffWriter(output_path, imagej=True) as tif:
+        
+            # Check the axes of the input file to write accordingly
+            if img_axes == "MTCZYX":
+
+                # Get the dimensions
+                M, T, C, Z, Y, X = img_dims
+
+                for m in range(M):
+
+                    tif.write(
+                        data=tzcyx_plane_access(img_array[m, :, :, :, :, :], T, C, Z),
+                        shape=(T, Z, C, Y, X),
+                        dtype=img_array.dtype,
+                        photometric="minisblack",
+                        metadata=get_fiji_metadata(T, C, Z, voxel_size_metadata),
+                        resolution=get_resolution(),
+                    )
+
+            else:
+
+                T, C, Z, Y, X = img_dims
+
+                tif.write(
+                    data=tzcyx_plane_access(img_array, T, C, Z),
+                    shape=(T, Z, C, Y, X),
+                    dtype=img_array.dtype,
+                    photometric="minisblack",
+                    metadata=get_fiji_metadata(T, C, Z, voxel_size_metadata),
+                    resolution=get_resolution(),
+                )
+
+    #--------------------------------------------------------------------------
+
+
 # if __name__ == "__main__":
 
 #     path = r"C:\Users\simao\Desktop\Repositories\Microscopy_File_Converter\test-conversions\nd2_and_zvi\Argo_Matrix of Crosses_60X_20260428-1505.nd2"
 
-#     img_array, pixel_size_metadata, img_axes = file_reading_functions.read_nd2_as_dask(path)
+#     img_array, voxel_size_metadata, img_axes = file_reading_functions.read_nd2_as_dask(path)
 
-#     print(img_array, pixel_size_metadata, img_axes)
+#     print(img_array, voxel_size_metadata, img_axes)
