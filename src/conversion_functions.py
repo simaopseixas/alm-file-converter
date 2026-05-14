@@ -20,6 +20,8 @@ import numpy as np
 
 from readlif.reader import LifFile
 
+import nd2
+
 import contextlib
 import os
 
@@ -47,6 +49,9 @@ class file_reading_functions:
 
         # Converts the zarr to dask
         img_array = writing_functions.as_dask_array(img_array)
+
+        # Get the closing function
+        img_array.close_after_write = ims_store.ims.close
 
         # Get voxel data
         z_size, y_size, x_size = ims_store.ims.resolution
@@ -280,6 +285,39 @@ class file_reading_functions:
         # Get the available axes of the data
         img_axes = "".join(sim.dims).upper()
 
+
+        return img_array, pixel_size_metadata, img_axes
+    
+    #--------------------------------------------------------------------------
+
+    def read_nd2_as_dask(file_path):
+        """
+        Opens a Nikon .nd2 as a dask array
+        """
+
+        # Access the nd2 file
+        nd2_file = nd2.ND2File(file_path)
+
+        # Converts the access to dask
+        img_array = nd2_file.to_dask()
+
+        # Get the closing file function
+        img_array.close_after_write = nd2_file.close
+
+        # Change the axes nomenclature to match the .lif M
+        img_axes = "".join(nd2_file.sizes.keys()).upper()        
+        img_axes = img_axes.replace("P", "M")
+        img_axes = img_axes.replace("V", "M")
+
+        # Get the voxel size from the file
+        voxel_size = nd2_file.voxel_size()
+
+        # Convert to metadata dictionary
+        pixel_size_metadata = {
+            "z": voxel_size.z if voxel_size.z else None,
+            "y": voxel_size.y if voxel_size.y else None,
+            "x": voxel_size.x if voxel_size.x else None,
+        }
 
         return img_array, pixel_size_metadata, img_axes
     
@@ -532,3 +570,11 @@ class writing_functions:
                     compressionargs={"level": 6},
                     maxworkers=1,
                 )
+
+# if __name__ == "__main__":
+
+#     path = r"C:\Users\simao\Desktop\Repositories\Microscopy_File_Converter\test-conversions\nd2_and_zvi\Argo_Matrix of Crosses_60X_20260428-1505.nd2"
+
+#     img_array, pixel_size_metadata, img_axes = file_reading_functions.read_nd2_as_dask(path)
+
+#     print(img_array, pixel_size_metadata, img_axes)

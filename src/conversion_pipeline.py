@@ -82,6 +82,9 @@ class file_conversion:
                     # Apply the reader function to read the file
                     img_array, pixel_size_metadata, img_axes = reader_function(input_file_path)
 
+                    # Get the closing function if it is an .ims or an .nd2
+                    close_after_write = getattr(img_array, "close_after_write", None)
+
                     # Normalize the axes of the data
                     img_array = writing_functions.normalize_to_tczyx(img_array, img_axes)
 
@@ -97,6 +100,10 @@ class file_conversion:
                         pixel_size_metadata,
                         output_file_format
                     )
+
+                    # Close any open nd2 or ims file
+                    if close_after_write is not None:
+                        close_after_write()
 
                 except Exception as error:
                     conversion_failed = True
@@ -186,6 +193,9 @@ class file_conversion:
                 # Apply the reader function to read the file
                 img_array, pixel_size_metadata, img_axes = reader_function(input_file_path)
 
+                # Get the closing function if it is an .ims or an .nd2
+                close_after_write = getattr(img_array, "close_after_write", None)
+
                 # Get the output "Conversion Folder"
                 output_folder = file_conversion.create_converted_output_folder(input_file_path.parent)
 
@@ -207,6 +217,10 @@ class file_conversion:
                     pixel_size_metadata,
                     output_file_format
                 )
+
+                # Close any open nd2 or ims file
+                if close_after_write is not None:
+                    close_after_write()
 
 
             except Exception as error:
@@ -266,6 +280,9 @@ class file_conversion:
                 # Apply the reader function to read the file
                 img_array, pixel_size_metadata, img_axes = reader_function(input_file_path)
 
+                # Get the closing function if it is an .ims or an .nd2
+                close_after_write = getattr(img_array, "close_after_write", None)
+
                 # Get the output "Conversion Folder"
                 output_folder = file_conversion.create_converted_output_folder(input_file_path.parent)
 
@@ -287,6 +304,10 @@ class file_conversion:
                     pixel_size_metadata,
                     output_file_format,
                 )
+
+                # Close any open nd2 or ims file
+                if close_after_write is not None:
+                    close_after_write()
 
 
             except Exception as error:
@@ -326,7 +347,7 @@ class file_conversion:
             None,
             "Select Microscopy File",
             "",
-            "Microscopy files (*.ims *.lif *.ome.tiff *.ome.tif *.tiff *.tif)"
+            "Microscopy files (*.ims *.lif *.ome.tiff *.ome.tif *.tiff *.tif *.nd2)"
         )
 
         if not file_path:
@@ -425,7 +446,7 @@ class file_conversion:
         folder = Path(folder_path)
 
         # Currently supported: .ims, .ome.zarr, .lif, ome.tiff
-        file_extensions = (".ome.tiff", ".ims", ".lif", ".tif", ".tiff", ".ome.tif")
+        file_extensions = (".ome.tiff", ".ome.tif", ".ims", ".lif", ".tif", ".tiff", ".nd2")
         folder_extensions = (".ome.zarr", ".zarr")
 
         files = []
@@ -478,8 +499,7 @@ class file_conversion:
             ".tif",
             ".ims",
             ".lif",
-            ".d2",
-            ".zvi",
+            ".nd2",
             ".zarr",
         )
 
@@ -515,6 +535,7 @@ class file_conversion:
             ".zarr": file_reading_functions.read_omezarr_as_dask,
             ".tif": file_reading_functions.read_tifs_as_dask,
             ".tiff": file_reading_functions.read_tifs_as_dask,
+            ".nd2": file_reading_functions.read_nd2_as_dask,
 
         }
 

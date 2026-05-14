@@ -156,7 +156,7 @@ class ConverterWidget(QWidget):
             self.batch_info_label,
             "This program currently has support for:\n" \
             ".ims, .lif, .ome.tif, .ome.tiff, .ome.zarr,\n" \
-            ".tif, .tiff, .zarr"
+            ".tif, .tiff, .nd2, .zarr"
 
         )
 
