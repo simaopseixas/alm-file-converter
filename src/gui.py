@@ -1,8 +1,8 @@
 import sys
 from pathlib import Path
 
-from PySide6.QtCore import Qt, QSettings, QTimer, QObject, QEvent, QPoint
-from PySide6.QtGui import QIcon
+from PySide6.QtCore import Qt, QSettings, QTimer, QObject, QEvent, QPoint, QUrl
+from PySide6.QtGui import QIcon, QDesktopServices
 from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -147,6 +147,10 @@ class ConverterWidget(QWidget):
         self.batch_info_label.setFixedSize(16, 16)
         self.batch_info_label.setAlignment(Qt.AlignCenter)
         self.batch_info_label.setCursor(Qt.PointingHandCursor)
+        self.batch_info_label.setCursor(Qt.PointingHandCursor)
+        self.batch_info_label.mousePressEvent = lambda event: QDesktopServices.openUrl(
+            QUrl("https://github.com/synkss/Microscopy_File_Converter")
+        )
         self.tooltip_manager.attach_tooltip(
             self.batch_checkbox,
             "Batch processing will convert all files in a folder.\n" \
@@ -156,15 +160,24 @@ class ConverterWidget(QWidget):
             self.batch_info_label,
             "This program currently has support for:\n" \
             ".ims, .lif, .ome.tif, .ome.tiff, .ome.zarr,\n" \
-            ".tif, .tiff, .nd2, .zarr"
+            ".tif, .tiff, .nd2, .zarr.\n" \
+            "\n" \
+            "To access this project's github for more\n" \
+            "information, click this button."
 
         )
 
         self.convert_label = QLabel()
 
+
+        # Create a clickable label
         self.author_label = QLabel("Made by: Simão Seixas, i3S")
         self.author_label.setObjectName("authorLabel")
         self.author_label.setAlignment(Qt.AlignRight)
+        self.author_label.setCursor(Qt.PointingHandCursor)
+        self.author_label.mousePressEvent = lambda event: QDesktopServices.openUrl(
+            QUrl("https://github.com/synkss")
+        )
 
         # Output file format ComboBox
         self.format_combobox = QComboBox()
@@ -295,6 +308,7 @@ class ConverterWidget(QWidget):
                 color: #9A9A9A;
                 font-size: 9px;
             }}
+
 
             QCheckBox {{
                 spacing: 5px;

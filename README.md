@@ -1,6 +1,6 @@
 ## General Description
 
-**ALM Microscopy File Converter** is a tool for converting microscopy image files into other formats.
+**ALM File Converter** is a tool for converting microscopy image files into other formats.
 
 The program currently supports the following input formats:
 
