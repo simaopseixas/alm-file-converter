@@ -416,9 +416,15 @@ that appear in some parts of the GUI
 """
 
 class CustomToolTipManager(QObject):
+
     def __init__(self, parent=None):
+        """
+        Class initialization function
+        """
+
         super().__init__(parent)
 
+        # QLabel used as the visible tooltip window
         self.tooltip = QLabel(parent)
         self.tooltip.setStyleSheet("""
             QLabel {
@@ -429,59 +435,92 @@ class CustomToolTipManager(QObject):
                 border-radius: 0px;
             }
         """)
+
+        # Make the label behave like a tooltip window and ignore mouse events
         self.tooltip.setWindowFlags(Qt.ToolTip)
         self.tooltip.setAttribute(Qt.WA_TransparentForMouseEvents)
         self.tooltip.hide()
 
+        # Tracks which widget is currently showing a tooltip
         self._current_widget = None
 
     def attach_tooltip(self, widget: QWidget, text: str):
+        """
+        Attach custom tooltip text to a widget and start watching its mouse events
+        """
+
         widget.setProperty("custom_tooltip", text)
         widget.setMouseTracking(True)
         widget.installEventFilter(self)
         widget.destroyed.connect(self._on_widget_destroyed)
 
+        # If the widget lives inside a dialog, also hide the tooltip when the
+        # dialog closes, hides, or loses focus
         dlg = self._find_parent_dialog(widget)
+
         if isinstance(dlg, QDialog):
+
             try:
                 dlg.installEventFilter(self)
                 dlg.finished.connect(self.hide_tooltip)
                 dlg.accepted.connect(self.hide_tooltip)
                 dlg.rejected.connect(self.hide_tooltip)
                 dlg.destroyed.connect(self.hide_tooltip)
+
             except Exception:
                 return  # if the dialog is in a weird state, silently skip
+            
 
     def _on_widget_destroyed(self):
+        """
+        Clear tooltip state when a watched widget is destroyed
+        """
+
         self.hide_tooltip()
         self._current_widget = None
 
+
     def detach_tooltip(self, widget: QWidget):
+        """
+        Remove the custom tooltip behavior from a widget
+        """
+
         widget.removeEventFilter(self)
         widget.setProperty("custom_tooltip", None)
+
         if widget is self._current_widget:
             self.hide_tooltip()
             self._current_widget = None
 
+
     def eventFilter(self, obj, event):
+        """
+        Watches registered widgets and dialogs to show, move, or hide the tooltip
+        """
         try:
+
             et = event.type()
 
             # 1) Entering a widget: start tracking + show
             if et == QEvent.Enter and isinstance(obj, QWidget):
                 text = obj.property("custom_tooltip")
+
                 if text:
                     self._current_widget = obj
+
                     try:
                         self.show_tooltip(text, event.globalPos())
+
                     except Exception:
                         return True  # eat the event but do nothing
 
             # 2) Moving within that same widget: reposition
             elif et == QEvent.MouseMove and obj is self._current_widget:
                 if self.tooltip.isVisible():
+
                     try:
                         self.show_tooltip(obj.property("custom_tooltip"), event.globalPos())
+
                     except Exception:
                         return True
 
@@ -508,8 +547,13 @@ class CustomToolTipManager(QObject):
             return False
 
         return super().eventFilter(obj, event)
+    
 
     def show_tooltip(self, text: str, pos: QPoint):
+        """
+        Update tooltip text and position it slightly above/right of the mouse cursor
+        """
+
         try:
             self.tooltip.setText(text)
             self.tooltip.adjustSize()
@@ -517,23 +561,39 @@ class CustomToolTipManager(QObject):
             margin = 10
             x = pos.x() + margin
             y = pos.y() - self.tooltip.height() - margin
+
             self.tooltip.move(x, y)
             self.tooltip.show()
+
         except Exception:
             # any problem during layout/move/show just abort
             return
+        
 
     def hide_tooltip(self):
+        """
+        Hide the tooltip if it is currently visible
+        """
+
         try:
             if self.tooltip.isVisible():
                 self.tooltip.hide()
+
         except Exception:
             pass
 
+
     def _find_parent_dialog(self, widget: QWidget):
+        """
+        Walk up the parent chain and return the containing dialog, if one exists
+        """
+
         w = widget
+
         while w is not None:
             if isinstance(w, QDialog):
                 return w
+            
             w = w.parent()
+            
         return None

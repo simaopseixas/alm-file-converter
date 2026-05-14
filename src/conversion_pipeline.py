@@ -67,6 +67,7 @@ class file_conversion:
             error_message = None
             error_traceback = None
             output_file = None
+            close_after_write = None
 
             # try/except to continue the loop even if there is any error
             with writing_functions.suppress_console_output():
@@ -86,7 +87,7 @@ class file_conversion:
                     close_after_write = getattr(img_array, "close_after_write", None)
 
                     # Normalize the axes of the data
-                    img_array = writing_functions.normalize_to_tczyx(img_array, img_axes)
+                    img_array, img_axes = writing_functions.normalize_to_tczyx(img_array, img_axes)
 
                     # Get the appropriate writer function for the specific file format that was chosen
                     writer_function = file_conversion.get_writer_function(output_file_format)
@@ -100,14 +101,15 @@ class file_conversion:
                         voxel_size_metadata,
                     )
 
-                    # Close any open nd2 or ims file
-                    if close_after_write is not None:
-                        close_after_write()
-
                 except Exception as error:
                     conversion_failed = True
                     error_message = str(error)
                     error_traceback = traceback.format_exc()
+
+                finally:
+                    # Close any open nd2 or ims file
+                    if close_after_write is not None:
+                        close_after_write()
 
                 # Garbage collect
                 gc.collect()
@@ -125,12 +127,19 @@ class file_conversion:
                 print(f"Failed to convert file: {input_file_path.name}")
                 print(f"Error: {error_message}")
                 print("Skipping to next file.")
+
             else:
                 successful_files += 1
 
                 # Different prints for different cases
-                if img_axes == "MTCZYX" and output_file_format in (".ome.zarr", ".tif", ".tiff"):
-                    print(f"Saved files to: {output_file.name.removesuffix(output_file_format)}")
+                if img_axes == "MTCZYX" and output_file_format in (".tif", ".tiff"):
+                    output_format_name = output_file.suffix.replace(".", "")
+                    print(
+                        f"Saved files to: "
+                        f"{output_file.name.removesuffix(output_file.suffix)}_{output_format_name}"
+                    )
+                elif img_axes == "MTCZYX" and output_file_format == ".ome.zarr":
+                    print(f"Saved files to: {output_file.name.removesuffix('.ome.zarr')}_omezarr")
                 else:
                     print(f"Saved File: {output_file.name}")
 
@@ -149,7 +158,7 @@ class file_conversion:
             print("All files were successfully converted.")
             print("-----------------------------------------------------------------------------------------------")
         else:
-            print()
+            print("-----------------------------------------------------------------------------------------------")
             print(f"Successful Files: {successful_files}/{n_files}")
             print(f"Failed Files: {failed_files}/{n_files}")
             print("Some files failed to convert. Check the conversion report for details.")
@@ -180,6 +189,10 @@ class file_conversion:
         error_message = None
         error_traceback = None
         output_file = None
+        close_after_write = None
+
+        # Get the output "Conversion Folder" before the reading happens
+        output_folder = file_conversion.create_converted_output_folder(input_file_path.parent)
 
         # Suppress unnecessary reading prints:
         with writing_functions.suppress_console_output():
@@ -195,14 +208,11 @@ class file_conversion:
                 # Get the closing function if it is an .ims or an .nd2
                 close_after_write = getattr(img_array, "close_after_write", None)
 
-                # Get the output "Conversion Folder"
-                output_folder = file_conversion.create_converted_output_folder(input_file_path.parent)
-
                 # Create the appropriate file path
                 output_file = file_conversion.create_output_file_path(output_folder, input_file_path, output_file_format)
 
                 # Normalize the axes of the data
-                img_array = writing_functions.normalize_to_tczyx(img_array, img_axes)
+                img_array, img_axes = writing_functions.normalize_to_tczyx(img_array, img_axes)
 
                 # Get the appropriate writer function for the specific file format that was chosen
                 writer_function = file_conversion.get_writer_function(output_file_format)
@@ -216,15 +226,15 @@ class file_conversion:
                     voxel_size_metadata,
                 )
 
-                # Close any open nd2 or ims file
-                if close_after_write is not None:
-                    close_after_write()
-
-
             except Exception as error:
                 conversion_failed = True
                 error_message = str(error)
                 error_traceback = traceback.format_exc()
+
+            finally:
+                # Close any open nd2 or ims file
+                if close_after_write is not None:
+                    close_after_write()
 
             # Garbage collect
             gc.collect()
@@ -234,11 +244,27 @@ class file_conversion:
             print(f"Failed to convert file: {input_file_path.name}")
             print(f"Error: {error_message}")
             print(error_traceback.rstrip())
+            print()
+
+            # Create the report file
+            file_conversion.create_single_file_error_report(
+                output_folder,
+                input_file_path,
+                error_message,
+                error_traceback,
+            )
             print("-----------------------------------------------------------------------------------------------")
+
         else:
             # Different prints for different cases
-            if img_axes == "MTCZYX" and output_file_format == ".ome.zarr":
-                print(f"Saved files to: {output_file.name.removesuffix('.ome.zarr')}")
+            if img_axes == "MTCZYX" and output_file_format in (".tif", ".tiff"):
+                output_format_name = output_file.suffix.replace(".", "")
+                print(
+                    f"Saved files to: "
+                    f"{output_file.name.removesuffix(output_file.suffix)}_{output_format_name}"
+                )
+            elif img_axes == "MTCZYX" and output_file_format == ".ome.zarr":
+                print(f"Saved files to: {output_file.name.removesuffix('.ome.zarr')}_omezarr")
             else:
                 print(f"Saved File: {output_file.name}")
             print("-----------------------------------------------------------------------------------------------")
@@ -267,6 +293,10 @@ class file_conversion:
         error_message = None
         error_traceback = None
         output_file = None
+        close_after_write = None
+
+        # Get the output "Conversion Folder" before the reading happens
+        output_folder = file_conversion.create_converted_output_folder(input_file_path.parent)
 
         # Suppress unnecessary reading prints:
         with writing_functions.suppress_console_output():
@@ -282,14 +312,11 @@ class file_conversion:
                 # Get the closing function if it is an .ims or an .nd2
                 close_after_write = getattr(img_array, "close_after_write", None)
 
-                # Get the output "Conversion Folder"
-                output_folder = file_conversion.create_converted_output_folder(input_file_path.parent)
-
                 # Create the appropriate file path
                 output_file = file_conversion.create_output_file_path(output_folder, input_file_path, output_file_format)
 
                 # Normalize the axes of the data
-                img_array = writing_functions.normalize_to_tczyx(img_array, img_axes)
+                img_array, img_axes = writing_functions.normalize_to_tczyx(img_array, img_axes)
 
                 # Get the appropriate writer function for the specific file format that was chosen
                 writer_function = file_conversion.get_writer_function(output_file_format)
@@ -303,15 +330,15 @@ class file_conversion:
                     voxel_size_metadata,
                 )
 
-                # Close any open nd2 or ims file
-                if close_after_write is not None:
-                    close_after_write()
-
-
             except Exception as error:
                 conversion_failed = True
                 error_message = str(error)
                 error_traceback = traceback.format_exc()
+
+            finally:
+                # Close any open nd2 or ims file
+                if close_after_write is not None:
+                    close_after_write()
 
             # Garbage collect
             gc.collect()
@@ -321,11 +348,27 @@ class file_conversion:
             print(f"Failed to convert file: {input_file_path.name}")
             print(f"Error: {error_message}")
             print(error_traceback.rstrip())
+            print()
+
+            # Create the report file
+            file_conversion.create_single_file_error_report(
+                output_folder,
+                input_file_path,
+                error_message,
+                error_traceback,
+            )
             print("-----------------------------------------------------------------------------------------------")
+
         else:
             # Different prints for different cases
-            if img_axes == "MTCZYX" and output_file_format == ".ome.zarr":
-                print(f"Saved files to: {output_file.name.removesuffix('.ome.zarr')}")
+            if img_axes == "MTCZYX" and output_file_format in (".tif", ".tiff"):
+                output_format_name = output_file.suffix.replace(".", "")
+                print(
+                    f"Saved files to: "
+                    f"{output_file.name.removesuffix(output_file.suffix)}_{output_format_name}"
+                )
+            elif img_axes == "MTCZYX" and output_file_format == ".ome.zarr":
+                print(f"Saved files to: {output_file.name.removesuffix('.ome.zarr')}_omezarr")
             else:
                 print(f"Saved File: {output_file.name}")
             print("-----------------------------------------------------------------------------------------------")
@@ -354,6 +397,8 @@ class file_conversion:
             return None
         
         return Path(file_path)
+    
+    #--------------------------------------------------------------------------
     
     def zarr_choice():
         """
@@ -390,7 +435,9 @@ class file_conversion:
                 QApplication.processEvents()
 
         return zarr_path
-            
+    
+    #--------------------------------------------------------------------------
+
         
     def folder_choice(parent=None):
         """
@@ -434,6 +481,8 @@ class file_conversion:
         n_files = len(files)
 
         return files, n_files, folder_path
+    
+    #--------------------------------------------------------------------------
 
     
     def files_from_folder(folder_path):
@@ -461,6 +510,8 @@ class file_conversion:
 
         return sorted(files)
     
+    #--------------------------------------------------------------------------
+    
     
     def create_converted_output_folder(input_folder):
         """
@@ -474,6 +525,10 @@ class file_conversion:
         output_folder.mkdir(parents=True, exist_ok=True)
 
         return output_folder
+    
+
+    #--------------------------------------------------------------------------
+
     
     def create_output_file_path(output_folder, input_file_path, output_file_format):
         """
@@ -517,6 +572,10 @@ class file_conversion:
 
         return output_file
     
+
+    #--------------------------------------------------------------------------
+
+    
     def get_reader_function(input_file_path):
         """
         Selects the correct function to read the file given its format
@@ -545,6 +604,10 @@ class file_conversion:
 
         raise ValueError(f"Unsupported file format: {input_file_path}")
     
+
+    #--------------------------------------------------------------------------
+
+    
     def get_writer_function(output_file_format):
         """
         Selects the correct function to write the file given the file format that was chosen
@@ -562,6 +625,10 @@ class file_conversion:
                 return WRITER_FUNCTIONS[output_file_format]
         
         raise ValueError(f"Unsupported output file format: {output_file_format}")
+    
+
+    #--------------------------------------------------------------------------
+
     
     def create_report(output_folder, n_files, successful_files, failed_files, failed_file_reports):
         """
@@ -590,5 +657,32 @@ class file_conversion:
                 report.write(f"File: {failed_file['file']}\n")
                 report.write(f"Error: {failed_file['error']}\n\n")
 
+        report_path_to_print = report_file.relative_to(Path(output_folder).parent)
+
         print()
-        print(f"Conversion report saved to: {report_file}")
+        print(f"Conversion report saved to: {report_path_to_print}")
+
+
+    #--------------------------------------------------------------------------
+
+
+    def create_single_file_error_report(output_folder, input_file_path, error_message, error_traceback):
+        """
+        Creates a report that saves the error for a failed single-file conversion
+        """
+
+        # Create the .txt
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        report_file = Path(output_folder) / f"conversion_error_report_{timestamp}.txt"
+
+        with open(report_file, "w", encoding="utf-8") as report:
+            report.write("Single-File Conversion Error Report\n")
+            report.write("===================================\n\n")
+            report.write(f"File: {input_file_path.name}\n")
+            report.write(f"Error: {error_message}\n\n")
+            report.write("Traceback:\n")
+            report.write("----------\n")
+            report.write(error_traceback)
+
+        print()
+        print(f"Conversion error report saved to: {report_file}")

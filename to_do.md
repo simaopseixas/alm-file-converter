@@ -1,16 +1,17 @@
 # TO-DO
 
-# Other things
+## Other things
+
+- Update the README
+- Comment normalization function
 
 ## File format support
 
-- Add .zvi reading support
-
-# Metadata
+## Metadata
 
 - Preserve channel names when available
 - Preserve time-spacing when available
 - Preserve positional metadata when available
 - Add significant bit-depth metadata (important for the case of 12 bit data)
 
-# Output formats
+## Output formats

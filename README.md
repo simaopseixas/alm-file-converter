@@ -1,58 +1,46 @@
-## General Description
+# ALM File Converter
 
-**ALM File Converter** is a tool for converting microscopy image files into other formats.
+A GUI tool for converting microscopy image files between bioimaging file formats.
 
-The program currently supports the following input formats:
+Both the standalone and folder executables are available on the latest Release.
 
-`.ims`, `.lif`, `.ome.tiff`, `.ome.zarr`, `.zarr`.
+## Supported Formats
 
-and supports conversion to the following output formats:
+### Input
 
-`.ome.zarr` (additional formats will be added in the future).
+`.ims`, `.lif`, `.nd2`, `.zvi`, `.tif`, `.tiff`, `.ome.tif`, `.ome.tiff`, `.zarr`, `.ome.zarr`.
 
-The converter can be used in two modes:
+### Output
 
-1. **Batch Conversion**, where all supported files inside a selected folder are converted.
-2. **Single-file Conversion**, where the user selects one microscopy file to be converted
-
-The program is designed to work with large microscopy datasets by relying on lazy loading through Zarr/Dask, reducing the need to load the entire dataset into memory at once.
-
-If an error occurs during batch conversion, the program skips the failed file and continues converting the remaining files. At the end, a report is generated listing the failed files and their error tracebacks.
-
-A standalone executable is available as a Release. It can also be built locally using PyInstaller.
-
----
+`.ome.tif`, `.ome.tiff`, `.ome.zarr`, `.tif`, `.tiff`.
 
 
-## Program usage
+## How to use
 
-1. Run the executable or start the program from Python, by running main.py
+1. Open **ALM File Converter.exe** or run the code through `main.py`.
 2. Choose the desired output format.
-3. Use **Batch Processing** if you want to convert all supported files that you have inside a folder.
-4. Disable **Batch Processing** if you want to convert a single file.
-5. In single-file mode, choose either:
-    - **Select Microscopy File** for `.ims`, `.lif` or `.ome.tiff` files.
-    - **Select OME-Zarr/Zarr File** for `.ome.zarr` or `.zarr` files.
+3. Use **Batch Processing** to convert all microscopy files in a folder.
+4. Disable **Batch Processing** to convert a single file.
+5. Select the input file or folder.
 6. Wait for the conversion to finish.
+7. Converted files are saved inside the generated folder: `Converted Files`.
 
----
+## Features
 
-## Output
+- Converts single microscopy files or multiple files from a folder in a batch conversion.
+- Supports lazy reading to handle large datasets (excluding only `.zvi`).
+- Supports multi-position reading in the `.lif`, `.nd2`, `.ome.tif` and `.ome.tiff` file formats.
+- Writes multi-positional data on different series (`.ome.tif`, `.ome.tiff`) or by writing different files (`.tif`, `.tiff`, `.ome.zarr`).
+- For multi-position data, `.ome.tif` and `.ome.tiff` can store positions as separate series in one file. `.tif`, `.tiff`, and `.ome.zarr` save each position as a separate output inside a folder.
+- Preserves voxel size metadata when available.
+- Generates timestamped error reports for failed conversions detailing each failed file and its error traceback information.
 
-Converted files are saved inside a new folder named `Converted Files` which is created inside the selected input folder, or next to the selected input file.
+### Minor usability features
 
-If any file fails during batch conversion, a timestamped report is saved in that same output folder:
+- The *Batch Processing* check-box and the file format choice box save their state for the next time the program is opened.
+- Information about the conversion is displayed in a console window that opens with the program.
+- If any error occurs during a batch conversion, the program will skip to the next file. The error will then be saved in the generated report
 
-`conversion_report_YYYY-MM-DD_HH-MM-SS.txt`
-
-The report contains:
-- Total number of files.
-- Number of successfully converted files.
-- Number of failed files.
-- List of failed files.
-- Error tracebacks.
-
----
 
 ## Running the code
 
@@ -77,9 +65,8 @@ source .venv/bin/activate
 python src/main.py
 ```
 
----
 
-## Building the Executable
+### Building the Executable
 
 To build the standalone executable, run:
 ```
@@ -91,8 +78,6 @@ To build the folder executable, run:
 .\.venv\Scripts\pyinstaller.exe --noconfirm --clean "folder-executable.spec"
 ```
 
-
----
 
 ## Author
 

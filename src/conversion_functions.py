@@ -154,7 +154,7 @@ class file_reading_functions:
 
     def read_omezarr_as_dask(file_path):
         """
-        Opens a zarr array in reading.
+        Opens a .zarr or an .ome.zarr as a zarr array in reading.
         Then converts it to a dask array.
         """
 
@@ -165,10 +165,11 @@ class file_reading_functions:
         # Get the voxel size data
         spacing = si_utils.get_spacing_from_sim(sim)
 
+        # Get the voxel size metadata if available
         voxel_size_metadata = {
-            "z": spacing.get("z", 1),
-            "y": spacing.get("y", 1),
-            "x": spacing.get("x", 1),
+            "z": spacing.get("z", None),
+            "y": spacing.get("y", None),
+            "x": spacing.get("x", None),
         }
 
         # Get the available axes of the data
@@ -398,28 +399,31 @@ class writing_functions:
     
     def normalize_to_tczyx(img_array, img_axes):
         """
-        Normalize image array to TCZYX order.
+        Normalize image array to TCZYX or MTCZYX order.
         Missing T, C, or Z dimensions are added with size 1.
+        If an M dimension is present, it is preserved as the leading axis.
         """
 
-        # If it has 6 dimensions, ignore this function, since it doesn't need any normalization
-        if img_axes == "MTCZYX":
-            return img_array
-
-
+        # Normalize the axis string and make sure the array is dask-backed
         img_axes = img_axes.upper()
         img_array = writing_functions.as_dask_array(img_array)
 
-        for dim in "TCZYX":
+        # Multi-position files need to keep M as the first dimension
+        # Otherwise, all files are normalized to standard TCZYX
+        target_axes = "MTCZYX" if "M" in img_axes else "TCZYX"
+
+        # Add any missing dimensions in their final target positions
+        for dim in target_axes:
             if dim not in img_axes:
-                axis = "TCZYX".index(dim)
+                axis = target_axes.index(dim)
                 img_array = dask.array.expand_dims(img_array, axis=axis)
                 img_axes = img_axes[:axis] + dim + img_axes[axis:]
 
-        axis_order = [img_axes.index(dim) for dim in "TCZYX"]
+        # Reorder the existing dimensions into the required order
+        axis_order = [img_axes.index(dim) for dim in target_axes]
         img_array = dask.array.transpose(img_array, axis_order)
 
-        return img_array
+        return img_array, target_axes
 
     #--------------------------------------------------------------------------
     
@@ -454,8 +458,8 @@ class writing_functions:
             for m in range(M):
 
                 # for testing convenience
-                if m + 1 > 2:
-                    break
+                # if m + 1 > 2:
+                #     break
 
                 # Change the name of the output mosaic filename
                 mosaic_output_path = mosaic_folder / (
@@ -576,8 +580,8 @@ class writing_functions:
                 for m in range(M):
 
                     # for testing convenience
-                    if m + 1 > 4:
-                        break
+                    # if m + 1 > 4:
+                    #     break
 
                     ome_tif.write(
                         data = tczyx_plane_access(img_array[m, :, :, :, :, :], T, C, Z),
@@ -704,8 +708,8 @@ class writing_functions:
             for m in range(M):
 
                 # for testing convenience
-                if m + 1 > 4:
-                    break
+                # if m + 1 > 4:
+                #     break
                 
 
                 mosaic_output_path = mosaic_folder / (
