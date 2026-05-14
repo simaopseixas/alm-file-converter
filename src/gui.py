@@ -21,7 +21,7 @@ from conversion_pipeline import file_conversion
 # Main GUI
 
 """
-This class manages main GUI of the software
+This class manages the main GUI of the software
 """
 
 class ConverterWidget(QWidget):
