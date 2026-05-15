@@ -30,10 +30,17 @@ Both the standalone and folder executables are available on the latest Release.
 - Converts single microscopy files or multiple files from a folder in a batch conversion.
 - Supports lazy reading to handle large datasets (excluding only `.zvi`).
 - Supports multi-position reading in the `.lif`, `.nd2`, `.ome.tif` and `.ome.tiff` file formats.
-- Writes multi-positional data on different series (`.ome.tif`, `.ome.tiff`) or by writing different files (`.tif`, `.tiff`, `.ome.zarr`).
-- For multi-position data, `.ome.tif` and `.ome.tiff` can store positions as separate series in one file. `.tif`, `.tiff`, and `.ome.zarr` save each position as a separate output inside a folder.
 - Preserves voxel size metadata when available.
 - Generates timestamped error reports for failed conversions detailing each failed file and its error traceback information.
+
+### Multi-Position Data
+
+The converter supports multi-position data when the input file has an available position/mosaic axis.
+
+For multi-position outputs:
+
+- `.ome.tif` and `.ome.tiff` store positions as separate series in one file.
+- `.tif`, `.tiff`, and `.ome.zarr` save each position as a separate output inside a folder.
 
 ### Minor usability features
 
