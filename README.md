@@ -2,7 +2,7 @@
 
 A GUI tool for converting microscopy image files between bioimaging file formats.
 
-Both the standalone and folder executables are available on the latest Release.
+A standalone executables is available on the latest Release.
 
 <p align="center">
 <img src="src/attributes/software_print.png" alt="ALM File Converter" width="90%">
