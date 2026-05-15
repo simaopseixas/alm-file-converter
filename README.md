@@ -5,7 +5,7 @@ A GUI tool for converting microscopy image files between bioimaging file formats
 Both the standalone and folder executables are available on the latest Release.
 
 <p align="center">
-<img src="src/attributes/software_print.png" alt="ALM File Converter" width="80%">
+<img src="src/attributes/software_print.png" alt="ALM File Converter" width="90%">
 </p>
 
 ## Supported Formats
@@ -19,7 +19,7 @@ Both the standalone and folder executables are available on the latest Release.
 `.ome.tif`, `.ome.tiff`, `.ome.zarr`, `.tif`, `.tiff`.
 
 <p align="center">
-<img src="src/attributes/conversion.png" alt="Image Conversion" width="80%">
+<img src="src/attributes/conversion.png" alt="Image Conversion" width="90%">
 </p>
 
 ## How to use
