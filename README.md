@@ -29,7 +29,7 @@ Both the standalone and folder executables are available on the latest Release.
 
 - Converts single microscopy files or multiple files from a folder in a batch conversion.
 - Supports lazy reading to handle large datasets (excluding only `.zvi`).
-- Supports multi-position reading in the `.lif`, `.nd2`, `.ome.tif` and `.ome.tiff` file formats.
+- Supports multi-position reading in the `.lif` and `.nd2` file formats.
 - Preserves voxel size metadata when available.
 - Generates timestamped error reports for failed conversions detailing each failed file and its error traceback information.
 
