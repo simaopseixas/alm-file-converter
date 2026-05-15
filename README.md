@@ -51,7 +51,7 @@ For multi-position outputs:
 
 ### Minor usability features
 
-- The *Batch Processing* check-box and the file format choice box save their state for the next time the program is opened.
+- The **Batch Processing** check-box and the file format choice box save their state for the next time the program is opened.
 - Information about the conversion is displayed in a console window that opens with the program.
 - If any error occurs during a batch conversion, the program will skip to the next file. The error will then be saved in the generated report
 
