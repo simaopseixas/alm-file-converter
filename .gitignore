@@ -12,3 +12,10 @@ onfirm --clean "ALM File Converter.spec"
 
 # Test datasets
 files_for_conversion/
+
+# Image file creation
+/src/attributes/conversion_image/
+
+# python cache files
+__pycache__/
+*.py[cod]
