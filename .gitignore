@@ -14,3 +14,6 @@ files_for_conversion/
 
 # Image file creation
 /src/attributes/conversion_image/
+
+# Conversion image
+/src/attributes/conversion.png
