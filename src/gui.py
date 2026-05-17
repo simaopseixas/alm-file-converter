@@ -194,13 +194,13 @@ class ConverterWidget(QWidget):
         self.choose_button.clicked.connect(self.run_batch_conversion)
 
         # Single Microscopy File Button
-        self.select_file_button = QPushButton("Select Microscopy File")
+        self.select_file_button = QPushButton("Select Input Microscopy File")
         self.select_file_button.setFixedHeight(34)
             # Wire the function
         self.select_file_button.clicked.connect(self.run_single_file_conversion)
 
         # Single Zarr File Button
-        self.select_zarr_button = QPushButton("Select OME-Zarr/Zarr File")
+        self.select_zarr_button = QPushButton("Select Input OME-Zarr/Zarr File")
         self.select_zarr_button.setFixedHeight(34)
             # Wire the function
         self.select_zarr_button.clicked.connect(self.run_single_omezarr_conversion)
@@ -277,7 +277,7 @@ class ConverterWidget(QWidget):
         self.convert_label.setText(
             "Convert files in the folder to:" if batch_enabled else "Convert file to:"
         )
-        self.choose_button.setText("Select folder")
+        self.choose_button.setText("Select Input Folder")
         self.choose_button.setVisible(batch_enabled)
         self.single_input_widget.setVisible(not batch_enabled)
         self.adjustSize()

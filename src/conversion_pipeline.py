@@ -50,8 +50,13 @@ class file_conversion:
         print(f"Selected Folder: {input_folder}")
         print(f"Found {n_files} Microscopy Files.")
         
-        # Get the output "Conversion Folder"
+        # Get the output "Converted Files"
         output_folder = file_conversion.create_converted_output_folder(input_folder)
+
+        # Change the name of the "Converted Files" to include the output file format (e.g. "Converted Filed OME ZARR")
+        output_format_name = output_file_format.removeprefix(".").replace(".", " ").upper()
+        output_folder = Path(input_folder) / f"Converted Files {output_format_name}"
+        output_folder.mkdir(parents=True, exist_ok=True)
 
         # Report metrics
         successful_files = 0

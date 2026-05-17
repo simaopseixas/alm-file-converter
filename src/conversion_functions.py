@@ -35,179 +35,6 @@ class file_reading_functions:
 
     #--------------------------------------------------------------------------
 
-    "NEED TO FINISH THIS - MULTI SERIES READING IN OME.TIFFs"
-    # def read_tifs_as_dask(file_path):
-    #     """
-    #     Function that handles .tif, .tiff, .ome.tif and .ome.tiff file formats.
-    #     Opens all of them as a read-only zarr array. Then converts it to a dask array.
-    #     The function can handle 6D MTCZYX data by opening the different series available in the file.
-    #     """
-
-    #     def get_series_axes(zarr_array, tif_series):
-    #         """
-    #         Helper function that gets the axes for a tiff series
-    #         """
-
-    #         img_axes = "".join(zarr_array.attrs.get("_ARRAY_DIMENSIONS", ""))
-
-    #         if not img_axes:
-    #             img_axes = tif_series.axes
-
-    #         return img_axes
-        
-    #     def read_series_as_dask(series_index, tif_series):
-    #         """
-    #         Helper function that reads one tiff series as a dask array and returns it with its axes
-    #         """
-
-    #         tif_store = tifffile.imread(
-    #             file_path,
-    #             aszarr=True,
-    #             series=series_index,
-    #         )
-    #         zarr_array = zarr.open(tif_store, mode="r")
-
-    #         img_array = writing_functions.as_dask_array(zarr_array)
-    #         img_axes = get_series_axes(zarr_array, tif_series)
-
-    #         return img_array, img_axes
-        
-    #     # Get any available metadata
-    #     with tifffile.TiffFile(file_path) as tif:
-
-    #         # Start the voxel size dictionary
-    #         voxel_size_metadata = {
-    #             "z": None,
-    #             "y": None,
-    #             "x": None,
-    #         }
-
-    #         # Get OME voxel size metadata
-    #         if tif.ome_metadata:
-    #             metadata = tifffile.xml2dict(tif.ome_metadata)
-    #             pixels = metadata["OME"]["Image"]["Pixels"]
-
-    #             if pixels.get("PhysicalSizeZ") is not None:
-    #                 voxel_size_metadata["z"] = float(pixels["PhysicalSizeZ"])
-
-    #             if pixels.get("PhysicalSizeY") is not None:
-    #                 voxel_size_metadata["y"] = float(pixels["PhysicalSizeY"])
-
-    #             if pixels.get("PhysicalSizeX") is not None:
-    #                 voxel_size_metadata["x"] = float(pixels["PhysicalSizeX"])
-
-    #         # If there is no available OME metadata
-    #         if not tif.ome_metadata:
-
-    #             # Get any available ImageJ metadata
-    #             imagej_metadata = tif.imagej_metadata or {}
-
-    #             # Get the Z spacing if it exists
-    #             if imagej_metadata.get("spacing") is not None:
-    #                 voxel_size_metadata["z"] = float(imagej_metadata["spacing"])
-
-    #             page = tif.pages[0]
-
-    #             x_resolution = page.tags.get("XResolution")
-    #             y_resolution = page.tags.get("YResolution")
-    #             resolution_unit = page.tags.get("ResolutionUnit")
-
-    #             if x_resolution is not None and y_resolution is not None:
-
-    #                 # Get the pixels per unit to then compute the pixel size
-    #                 x_pixels_per_unit = x_resolution.value[0] / x_resolution.value[1]
-    #                 y_pixels_per_unit = y_resolution.value[0] / y_resolution.value[1]
-
-    #                 # Get the unit used in ImageJ
-    #                 imagej_unit = str(imagej_metadata.get("unit", "")).lower()
-
-    #                 # Start a dictionary for unit conversions
-    #                 imagej_unit_to_micrometer = {
-    #                     "um": 1.0,
-    #                     "µm": 1.0,
-    #                     "micron": 1.0,
-    #                     "microns": 1.0,
-    #                     "micrometer": 1.0,
-    #                     "micrometers": 1.0,
-    #                     "nm": 0.001,
-    #                     "mm": 1000.0,
-    #                 }
-
-    #                 # Dictionary for the units that are available in standard tifs
-    #                 unit_to_micrometer = {
-    #                     2: 25400.0, # INCH
-    #                     3: 10000.0, # CENTIMETER
-    #                 }
-
-    #                 # Start the unit variable
-    #                 unit_size = None
-
-    #                 # Check if there is any unit from ImageJ
-    #                 if imagej_unit in imagej_unit_to_micrometer:
-    #                     unit_size = imagej_unit_to_micrometer[imagej_unit]
-
-    #                 # If ImageJ gives nothing, get it from the tif directly
-    #                 elif resolution_unit is not None:
-    #                     resolution_unit_value = int(resolution_unit.value)
-
-    #                     if resolution_unit_value in unit_to_micrometer:
-    #                         unit_size = unit_to_micrometer[resolution_unit_value]
-
-    #                 # Continue to append pixel size if we got an unit size from any of the two methods
-    #                 if unit_size is not None:
-
-    #                     if x_pixels_per_unit != 0:
-    #                         voxel_size_metadata["x"] = unit_size / x_pixels_per_unit
-
-    #                     if y_pixels_per_unit != 0:
-    #                         voxel_size_metadata["y"] = unit_size / y_pixels_per_unit
-
-    #         # Keep every series available
-    #         image_series = [
-    #             (series_index, series)
-    #             for series_index, series in enumerate(tif.series)
-    #         ]
-
-    #         # Raise an error if no series at all exists
-    #         if not image_series:
-    #             raise ValueError(f"No readable image series found in TIFF file: {file_path}")
-
-    #         # If more than one series exists, read all of them as M positions.
-    #         if len(image_series) > 1:
-
-    #             m_arrays = []
-
-    #             for series_index, series in image_series:
-    #                 series_array, series_axes = read_series_as_dask(series_index, series)
-
-    #                 # Normalize each series to TCZYX before stacking into MTCZYX.
-    #                 series_array, series_axes = writing_functions.normalize_to_tczyx(
-    #                     series_array,
-    #                     series_axes,
-    #                 )
-
-    #                 m_arrays.append(series_array)
-
-    #             first_shape = m_arrays[0].shape
-
-    #             if any(series_array.shape != first_shape for series_array in m_arrays):
-    #                 raise ValueError(
-    #                     "This TIFF contains multiple series with different shapes. "
-    #                     "The converter cannot stack them into a single M axis without "
-    #                     "dropping or reshaping data."
-    #                 )
-
-    #             img_array = dask.array.stack(m_arrays, axis=0)
-    #             img_axes = "MTCZYX"
-
-    #             return img_array, voxel_size_metadata, img_axes
-
-    #         # Otherwise, read the only series as a normal single-position TIFF.
-    #         first_series_index, first_series = image_series[0]
-    #         img_array, img_axes = read_series_as_dask(first_series_index, first_series)
-
-    #         return img_array, voxel_size_metadata, img_axes
-
     def read_tifs_as_dask(file_path):
         """
         Functions that handles .tif, .tiff, .ome.tif and .ome.tiff file formats.
@@ -419,6 +246,10 @@ class file_reading_functions:
 
         # Access the lif
         lif = LifFile(file_path)
+
+        images = list(lif.get_iter_image())
+        print(images)
+
         img = lif.get_image(image_index)
 
         # Get the voxel size
@@ -469,6 +300,8 @@ class file_reading_functions:
         else:
             img_array = img_array[0]
             img_axes = "TCZYX"
+
+        print(img_array, voxel_size_metadata, img_axes)
 
         return img_array, voxel_size_metadata, img_axes
 
@@ -914,3 +747,11 @@ class writing_functions:
                 )
 
     #--------------------------------------------------------------------------
+
+# if __name__ == "__main__":
+
+#     file = r"C:\Users\simao\Desktop\Repositories\Microscopy_File_Converter\files_for_conversion\170nmGreenBeads_60xGlyc.lif"
+    
+#     file = 
+    
+#     ile_reading_functions.read_lif_as_dask(file)

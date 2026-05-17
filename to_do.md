@@ -11,7 +11,7 @@
 
 - Maybe chagne the omezarr writing protocol, since the multiview-stitcher sim is taking some time
 - Add multi-series/position data in ome-tiff and ome.tif - I think I will need to do a sequential read->write of a series at a time onto the same file. So I cannot create an entire MTCZYX dask array at once
-- change the series reading in .lif and .nd2 to handle the writing in file one series at a time. This would need the computation of one dask array per available series.
+- change the series reading in .lif and .nd2 to handle the writing in the file to be one series at a time. This would need the computation of one dask array per available series.
 
 ## Metadata
 
