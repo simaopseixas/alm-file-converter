@@ -224,10 +224,94 @@ class file_reading_functions:
 
     #--------------------------------------------------------------------------
     
-    def read_lif_as_dask(file_path, image_index=0):
+    # def read_lif_as_dask(file_path, image_index=0):
+    #     """
+    #     Opens a Leica .lif file.
+    #     Then converts it to a dask array.
+    #     """
+
+    #     def read_lif_zstack(file_path, image_index, t, c, m, Z):
+    #         """
+    #         Helper function to access the .lif data to build the dask array
+    #         """
+    #         lif = LifFile(file_path)
+    #         img = lif.get_image(image_index)
+
+    #         planes = []
+
+    #         for z in range(Z):
+    #             planes.append(np.asarray(img.get_frame(z=z, t=t, c=c, m=m)))
+
+    #         return np.stack(planes, axis=0)
+
+    #     # Access the lif
+    #     lif = LifFile(file_path)
+
+    #     images = list(lif.get_iter_image())
+    #     print(images)
+
+
+
+    #     img = lif.get_image(image_index)
+
+    #     # Get the voxel size
+    #     x_scale, y_scale, z_scale, t_scale = img.info["scale"]
+    #     voxel_size_metadata = {
+    #         "z": 1 / z_scale if z_scale else None,
+    #         "y": 1 / y_scale if y_scale else None,
+    #         "x": 1 / x_scale if x_scale else None,
+    #     }
+
+    #     # Get the dask array
+    #     dims = img.info["dims"]
+
+    #     M = dims.m
+    #     T = dims.t
+    #     C = len(img.bit_depth)
+    #     Z = dims.z
+    #     Y = dims.y
+    #     X = dims.x
+        
+    #     sample = np.asarray(img.get_frame(z=0, t=0, c=0, m=0))
+    #     dtype = sample.dtype
+
+    #     m_planes = []
+    #     for m in range(M):
+    #         t_planes = []
+
+    #         for t in range(T):
+    #             c_planes = []
+
+    #             for c in range(C):
+                    
+    #                 z_stack = dask.delayed(read_lif_zstack)(file_path, image_index, t, c, m, Z)
+    #                 z_stack = dask.array.from_delayed(z_stack, shape=(Z,Y,X), dtype=dtype)
+    #                 c_planes.append(z_stack)
+
+    #             t_stack = dask.array.stack(c_planes, axis=0)
+    #             t_planes.append(t_stack)
+
+    #         m_stack = dask.array.stack(t_planes, axis=0)
+    #         m_planes.append(m_stack)
+
+    #     img_array = dask.array.stack(m_planes, axis=0)
+
+    #     # Get the available axes
+    #     if M > 1:
+    #         img_axes = "MTCZYX"
+    #     else:
+    #         img_array = img_array[0]
+    #         img_axes = "TCZYX"
+
+    #     print(img_array, voxel_size_metadata, img_axes)
+
+    #     return img_array, voxel_size_metadata, img_axes
+
+    def read_lif_as_dask(file_path):
         """
         Opens a Leica .lif file.
-        Then converts it to a dask array.
+        Returns a list of independent 5D TCZYX image series dictionaries
+        with the series dask array, axes and voxel size data.
         """
 
         def read_lif_zstack(file_path, image_index, t, c, m, Z):
@@ -243,67 +327,90 @@ class file_reading_functions:
                 planes.append(np.asarray(img.get_frame(z=z, t=t, c=c, m=m)))
 
             return np.stack(planes, axis=0)
-
-        # Access the lif
-        lif = LifFile(file_path)
-
-        images = list(lif.get_iter_image())
-        print(images)
-
-        img = lif.get_image(image_index)
-
-        # Get the voxel size
-        x_scale, y_scale, z_scale, t_scale = img.info["scale"]
-        voxel_size_metadata = {
-            "z": 1 / z_scale if z_scale else None,
-            "y": 1 / y_scale if y_scale else None,
-            "x": 1 / x_scale if x_scale else None,
-        }
-
-        # Get the dask array
-        dims = img.info["dims"]
-
-        M = dims.m
-        T = dims.t
-        C = len(img.bit_depth)
-        Z = dims.z
-        Y = dims.y
-        X = dims.x
         
-        sample = np.asarray(img.get_frame(z=0, t=0, c=0, m=0))
-        dtype = sample.dtype
+        def build_tczyx_array(file_path, image_index, img, m):
+            """
+            Helper function that constructs the TCZYX dask array inside a single .lif series
+            """
 
-        m_planes = []
-        for m in range(M):
+            # Get the dimensions
+            dims = img.info["dims"]
+
+            T = dims.t
+            C = len(img.bit_depth)
+            Z = dims.z
+            Y = dims.y
+            X = dims.x
+
+            sample = np.asarray(img.get_frame(z=0, t=0, c=0, m=m))
+            dtype = sample.dtype
+
             t_planes = []
-
             for t in range(T):
                 c_planes = []
 
                 for c in range(C):
-                    
+
                     z_stack = dask.delayed(read_lif_zstack)(file_path, image_index, t, c, m, Z)
                     z_stack = dask.array.from_delayed(z_stack, shape=(Z,Y,X), dtype=dtype)
                     c_planes.append(z_stack)
 
-                t_stack = dask.array.stack(c_planes, axis=0)
-                t_planes.append(t_stack)
+                c_stack = dask.array.stack(c_planes, axis=0)
+                t_planes.append(c_stack)
 
-            m_stack = dask.array.stack(t_planes, axis=0)
-            m_planes.append(m_stack)
+            t_stack = dask.array.stack(t_planes, axis=0)
 
-        img_array = dask.array.stack(m_planes, axis=0)
+            return t_stack
+        
+        # Access the lif
+        lif = LifFile(file_path)
 
-        # Get the available axes
-        if M > 1:
-            img_axes = "MTCZYX"
-        else:
-            img_array = img_array[0]
-            img_axes = "TCZYX"
+        # Extract the series
+        images = list(lif.get_iter_image())
 
-        print(img_array, voxel_size_metadata, img_axes)
+        if not images:
+            raise ValueError(f"No readable image series found in .lif file: {file_path}")
+        
+        image_series = []
 
-        return img_array, voxel_size_metadata, img_axes
+        for image_index, img in enumerate(images):
+            
+            # Get the series dimensions
+            dims = img.info["dims"]
+
+            # Get the available mosaics
+            M = dims.m
+
+            # Get the voxel size metadata
+            x_scale, y_scale, z_scale, t_scale = img.info["scale"]
+            voxel_size_metadata = {
+                "z": 1 / z_scale if z_scale else None,
+                "y": 1 / y_scale if y_scale else None,
+                "x": 1 / x_scale if x_scale else None,
+            }
+
+            # For each mosaic inside the "series"
+            for m in range(M):
+
+                # Compute the TCZYX dask array
+                image_array = build_tczyx_array(file_path, image_index, img, m)
+
+                # Get the series name
+                image_name = getattr(img, "name", f"Series{image_index + 1:03d}")
+
+                # Get the number of the mosaic if there are more mosaics available
+                if M > 1:
+                    image_name = f"{image_name}_mosaic_{m + 1}"
+
+                # Append the mosaic information on the list
+                image_series.append({
+                    "array": image_array,
+                    "axes": "TCZYX",
+                    "voxel_size_metadata": voxel_size_metadata,
+                    "name": image_name,
+                })
+
+        return image_series
 
     
     #--------------------------------------------------------------------------
@@ -532,16 +639,17 @@ class writing_functions:
 
     #--------------------------------------------------------------------------
 
-    def write_ome_tiff(
-            output_path,
-            img_array,
-            img_dims,
-            img_axes,
-            voxel_size_metadata,
-    ):
+    def write_ome_tiff(output_path, image_series):
         """
         Function that takes a dask array as an input and writes its data into an .ome.tif or .ome.tiff file
         """
+
+        def get_ome_metadata(voxeL_size_metadata):
+            """
+            Helper function that computes an OME voxel size dictionary for metadata
+            """
+
+            ome_metadata 
 
         # Get the output path
         output_path = Path(output_path)
@@ -750,8 +858,10 @@ class writing_functions:
 
 # if __name__ == "__main__":
 
-#     file = r"C:\Users\simao\Desktop\Repositories\Microscopy_File_Converter\files_for_conversion\170nmGreenBeads_60xGlyc.lif"
+    file = r"C:\Users\simao\Desktop\Repositories\Microscopy_File_Converter\files_for_conversion\lixo\MosaicoIIrregular_Leica.lif"
     
 #     file = 
     
-#     ile_reading_functions.read_lif_as_dask(file)
+    image_series = file_reading_functions.read_lif_as_dask(file)
+
+    print(image_series)
