@@ -2,7 +2,7 @@
 
 A Python GUI tool for microscopy file conversion, designed to convert bioimaging datasets between IMS, LIF, ND2, ZVI, TIFF, OME-TIFF, Zarr and OME-Zarr formats.
 
-ALM File Converter is intended for light microscopy, confocal microscopy, lightsheet microscopy and large multidimensional microscopy image datasets.
+ALM File Converter is intended fluorescence microscopy datasets, and it is capable of converting large multidimensional microscopy image data.
 
 A standalone executable is available on the latest Release.
 
