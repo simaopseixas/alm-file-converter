@@ -49,11 +49,8 @@ class file_conversion:
         print()
         print(f"Selected Folder: {input_folder}")
         print(f"Found {n_files} Microscopy Files.")
-        
-        # Get the output "Converted Files"
-        output_folder = file_conversion.create_converted_output_folder(input_folder)
 
-        # Change the name of the "Converted Files" to include the output file format (e.g. "Converted Filed OME ZARR")
+        # Create a "Converted Files" folder that includes the output file format (e.g. "Converted Filed OME ZARR")
         output_format_name = output_file_format.removeprefix(".").replace(".", " ").upper()
         output_folder = Path(input_folder) / f"Converted Files {output_format_name}"
         output_folder.mkdir(parents=True, exist_ok=True)
@@ -66,7 +63,7 @@ class file_conversion:
         for file_index, input_file_path in enumerate(input_file_paths, start=1):
 
             # Get the disk space that the file occupies
-            file_size = file_conversion.get_disk_space_string(input_file_path)
+            file_size = file_conversion.get_disk_space(input_file_path)
 
             print()
             print(f"Converting file {file_index}/{n_files}: {input_file_path.name} to {output_file_format} ({file_size})")
@@ -193,7 +190,7 @@ class file_conversion:
             return
         
         # Get the disk space that the file occupies
-        file_size = file_conversion.get_disk_space_string(input_file_path)
+        file_size = file_conversion.get_disk_space(input_file_path)
         
         print()
         print("-----------------------------------------------------------------------------------------------")
@@ -302,7 +299,7 @@ class file_conversion:
             return
         
         # Get the disk space that the file occupies
-        file_size = file_conversion.get_disk_space_string(input_file_path)
+        file_size = file_conversion.get_disk_space(input_file_path)
         
         print()
         print("-----------------------------------------------------------------------------------------------")
@@ -729,8 +726,9 @@ class file_conversion:
 
         # In case neither of the previous ones worked
         else:
-            return "Unkown size"
+            return "Unknown size"
         
+        # Create a list with the relevant memory units
         units = ["B", "KB", "MB", "GB", "TB"]
         size = float(size_bytes)
 

@@ -1,13 +1,6 @@
 # TO-DO
 
-- Add the size of the file being converted in the console
-
 - Add the available pyramids of .ims datasets to the reading and writing protocols
-
-- Change the reading of the file formats into the image_series approach:
-    remaining:
-        zarrs - .zarr, .ome.zarr
-        tifs
 
 - Validate the time-frame metadata in all file formats:
     Remaining:
@@ -21,7 +14,6 @@
 - Preserve time-spacing when available
     reamining
         .ims (I WILL NEED A TIME FRAME FILE)
-        zarrs - .zarr, .ome.zarr 
 
 - Preserve positional metadata when available
 

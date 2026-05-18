@@ -535,6 +535,10 @@ class file_reading_functions:
                     "time_metadata": time_metadata
                 })
 
+                # Append the closing function in the final position
+                if p == n_positions - 1:
+                    image_series[-1]["file_close_function"] = nd2_file.close
+
         # If there is only one series
         else:
             image_series.append({
