@@ -356,7 +356,7 @@ class file_reading_functions:
 
                 # Get the number of the mosaic if there are more mosaics available
                 if M > 1:
-                    image_name = f"{image_name}_mosaic_{m + 1}"
+                    image_name = f"{image_name}"
 
                 # Append the mosaic information on the list
                 image_series.append({
