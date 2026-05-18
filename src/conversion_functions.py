@@ -640,9 +640,13 @@ class writing_functions:
         img_axes = img_axes.upper()
         img_array = writing_functions.as_dask_array(img_array)
 
-        # Multi-position files need to keep M as the first dimension
-        # Otherwise, all files are normalized to standard TCZYX
-        target_axes = "MTCZYX" if "M" in img_axes else "TCZYX"
+        # This function expects positions/mosaics to already be separate series
+        if "M" in img_axes:
+            raise ValueError(
+                "M dimensions must be split into separate image series before normalization."
+            )
+
+        target_axes = "TCZYX"
 
         # Add any missing dimensions in their final target positions
         for dim in target_axes:
@@ -651,7 +655,7 @@ class writing_functions:
                 img_array = dask.array.expand_dims(img_array, axis=axis)
                 img_axes = img_axes[:axis] + dim + img_axes[axis:]
 
-        # Reorder the existing dimensions into the required order
+        # Reorder the existing dimensions into TCZYX
         axis_order = [img_axes.index(dim) for dim in target_axes]
         img_array = dask.array.transpose(img_array, axis_order)
 

@@ -194,7 +194,7 @@ class file_conversion:
         error_message = None
         error_traceback = None
         output_file = None
-        close_after_write = None
+        image_series = None
 
         # Get the output "Conversion Folder" before the reading happens
         output_folder = file_conversion.create_converted_output_folder(input_file_path.parent)
@@ -208,28 +208,20 @@ class file_conversion:
                 reader_function = file_conversion.get_reader_function(input_file_path)
 
                 # Apply the reader function to read the file
-                img_array, voxel_size_metadata, img_axes = reader_function(input_file_path)
-
-                # Get the closing function if it is an .ims or an .nd2
-                close_after_write = getattr(img_array, "close_after_write", None)
+                image_series = reader_function(input_file_path)
 
                 # Create the appropriate file path
                 output_file = file_conversion.create_output_file_path(output_folder, input_file_path, output_file_format)
 
-                # Normalize the axes of the data
-                img_array, img_axes = writing_functions.normalize_to_tczyx(img_array, img_axes)
+                # Normalize the axes of each available series
+                for series in image_series:
+                    series["array"], series["axes"] = writing_functions.normalize_to_tczyx(series["array"], series["axes"])
 
                 # Get the appropriate writer function for the specific file format that was chosen
                 writer_function = file_conversion.get_writer_function(output_file_format)
 
                 # Apply the writer function to create the converted file
-                writer_function(
-                    output_file,
-                    img_array,
-                    img_array.shape,
-                    img_axes,
-                    voxel_size_metadata,
-                )
+                writer_function(output_file, image_series)
 
             except Exception as error:
                 conversion_failed = True
@@ -592,10 +584,10 @@ class file_conversion:
         READER_FUNCTIONS = {
             ".ome.tif": file_reading_functions.read_tifs_as_dask,
             ".ome.tiff": file_reading_functions.read_tifs_as_dask,
-            ".ome.zarr": file_reading_functions.read_omezarr_as_dask,
+            ".ome.zarr": file_reading_functions.read_zarrs_as_dask,
             ".ims": file_reading_functions.read_ims_as_dask,
             ".lif": file_reading_functions.read_lif_as_dask,
-            ".zarr": file_reading_functions.read_omezarr_as_dask,
+            ".zarr": file_reading_functions.read_zarrs_as_dask,
             ".tif": file_reading_functions.read_tifs_as_dask,
             ".tiff": file_reading_functions.read_tifs_as_dask,
             ".nd2": file_reading_functions.read_nd2_as_dask,
