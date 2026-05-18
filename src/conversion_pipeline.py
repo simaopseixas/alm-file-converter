@@ -312,7 +312,8 @@ class file_conversion:
         error_message = None
         error_traceback = None
         output_file = None
-        close_after_write = None
+        image_series = None
+        close_after_write_functions = []
 
         # Get the output "Conversion Folder" before the reading happens
         output_folder = file_conversion.create_converted_output_folder(input_file_path.parent)
@@ -326,28 +327,27 @@ class file_conversion:
                 reader_function = file_conversion.get_reader_function(input_file_path)
 
                 # Apply the reader function to read the file
-                img_array, voxel_size_metadata, img_axes = reader_function(input_file_path)
+                image_series = reader_function(input_file_path)
 
-                # Get the closing function if it is an .ims or an .nd2
-                close_after_write = getattr(img_array, "close_after_write", None)
+                # Get the closing function if it exists on the dictionary
+                close_after_write_functions = [
+                    series["file_close_function"]
+                    for series in image_series
+                    if "file_close_function" in series
+                ]
 
                 # Create the appropriate file path
                 output_file = file_conversion.create_output_file_path(output_folder, input_file_path, output_file_format)
 
-                # Normalize the axes of the data
-                img_array, img_axes = writing_functions.normalize_to_tczyx(img_array, img_axes)
+                # Normalize the axes of each available series
+                for series in image_series:
+                    series["array"], series["axes"] = writing_functions.normalize_to_tczyx(series["array"], series["axes"])
 
                 # Get the appropriate writer function for the specific file format that was chosen
                 writer_function = file_conversion.get_writer_function(output_file_format)
 
                 # Apply the writer function to create the converted file
-                writer_function(
-                    output_file,
-                    img_array,
-                    img_array.shape,
-                    img_axes,
-                    voxel_size_metadata,
-                )
+                writer_function(output_file, image_series)
 
             except Exception as error:
                 conversion_failed = True
@@ -356,8 +356,8 @@ class file_conversion:
 
             finally:
                 # Close any open nd2 or ims file
-                if close_after_write is not None:
-                    close_after_write()
+                for close_function in close_after_write_functions:
+                    close_function()
 
             # Garbage collect
             gc.collect()
@@ -380,14 +380,16 @@ class file_conversion:
 
         else:
             # Different prints for different cases
-            if img_axes == "MTCZYX" and output_file_format in (".tif", ".tiff"):
+            if image_series is not None and len(image_series) > 1 and output_file_format in (".tif", ".tiff"):
                 output_format_name = output_file.suffix.replace(".", "")
                 print(
                     f"Saved files to: "
                     f"{output_file.name.removesuffix(output_file.suffix)}_{output_format_name}"
                 )
-            elif img_axes == "MTCZYX" and output_file_format == ".ome.zarr":
+
+            elif image_series is not None and len(image_series) > 1 and output_file_format == ".ome.zarr":
                 print(f"Saved files to: {output_file.name.removesuffix('.ome.zarr')}_omezarr")
+
             else:
                 print(f"Saved File: {output_file.name}")
             print("-----------------------------------------------------------------------------------------------")
@@ -740,29 +742,29 @@ class file_conversion:
 
         return f"{size:.2f} {unit}"
 
-if __name__ == "__main__":
+# if __name__ == "__main__":
 
-    input_file_path = Path(
-        r"C:\Users\simao\Desktop\Repositories\Microscopy_File_Converter\files_for_conversion\lixo\Converted Files\MosaicoIIrregular_Leica.ome.tiff"
-    )
+#     input_file_path = Path(
+#         r"C:\Users\simao\Desktop\Repositories\Microscopy_File_Converter\files_for_conversion\lixo\Converted Files\MosaicoIIrregular_Leica.ome.tiff"
+#     )
 
-    print(file_conversion.get_disk_space(input_file_path))
+#     print(file_conversion.get_disk_space(input_file_path))
 
-    output_file_format = ".ome.tiff"
+#     output_file_format = ".ome.tiff"
 
-    output_folder = file_conversion.create_converted_output_folder(
-        input_file_path.parent
-    )
+#     output_folder = file_conversion.create_converted_output_folder(
+#         input_file_path.parent
+#     )
 
-    output_file = file_conversion.create_output_file_path(
-        output_folder,
-        input_file_path,
-        output_file_format,
-    )
+#     output_file = file_conversion.create_output_file_path(
+#         output_folder,
+#         input_file_path,
+#         output_file_format,
+#     )
 
-    image_series = file_reading_functions.read_tifs_as_dask(input_file_path)
+#     image_series = file_reading_functions.read_tifs_as_dask(input_file_path)
 
-    print(image_series)
+#     print(image_series)
 
     # for series in image_series:
     #     series["array"], series["axes"] = writing_functions.normalize_to_tczyx(
