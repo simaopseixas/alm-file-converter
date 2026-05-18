@@ -691,3 +691,37 @@ class file_conversion:
 
         print()
         print(f"Conversion error report saved to: {report_file}")
+
+
+if __name__ == "__main__":
+
+    input_file_path = Path(
+        r"C:\Users\simao\Desktop\Repositories\Microscopy_File_Converter\files_for_conversion\lixo\MosaicoIIrregular_Leica.lif"
+    )
+
+    output_file_format = ".ome.tiff"
+
+    output_folder = file_conversion.create_converted_output_folder(
+        input_file_path.parent
+    )
+
+    output_file = file_conversion.create_output_file_path(
+        output_folder,
+        input_file_path,
+        output_file_format,
+    )
+
+    image_series = file_reading_functions.read_lif_as_dask(input_file_path)
+
+    # print(image_series)
+
+    for series in image_series:
+        series["array"], series["axes"] = writing_functions.normalize_to_tczyx(
+            series["array"],
+            series["axes"],
+        )
+
+    writing_functions.write_ome_tiff(
+        output_file,
+        image_series,
+    )

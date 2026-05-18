@@ -38,28 +38,15 @@ class file_reading_functions:
     def read_tifs_as_dask(file_path):
         """
         Functions that handles .tif, .tiff, .ome.tif and .ome.tiff file formats.
-        Opens all of them as a read-only zarr array. Then converts it to a dask array.
+        Opens the data as a dask array and returns a list of them, as independent image series dictionaries.
         """
 
-        # Read the ome.tiff as a zarr
-        tif_store = tifffile.imread(file_path, aszarr=True)
-        zarr_array = zarr.open(tif_store, mode="r")
+        def get_tif_voxel_size_metadata(tif, tif_series, series_index):
+            """
+            Get voxel size metadata from OME or Imagej standard TIFF metadata.
+            When accessed, these values are returned as micrometers.
+            """
 
-        # Convert the zarr to a dask array
-        img_array = writing_functions.as_dask_array(zarr_array)
-
-        # Get the axes of the data
-        img_axes = "".join(zarr_array.attrs.get("_ARRAY_DIMENSIONS", ""))
-
-        # Get any metadata
-        with tifffile.TiffFile(file_path) as tif:
-
-            # Fallback if there were no axes information available
-            if not img_axes:
-                series = tif.series[0]
-                img_axes = series.axes
-
-            # If there is no OME metadata
             voxel_size_metadata = {
                 "z": None, 
                 "y": None,
@@ -69,7 +56,12 @@ class file_reading_functions:
             # Get OME voxel size metadata
             if tif.ome_metadata:
                 metadata = tifffile.xml2dict(tif.ome_metadata)
-                pixels = metadata["OME"]["Image"]["Pixels"]
+                ome_image = metadata["OME"]["Image"]
+
+                if isinstance(ome_image, list):
+                    ome_image = ome_image[series_index]
+
+                pixels = ome_image["Pixels"]
 
                 if pixels.get("PhysicalSizeZ") is not None:
                     voxel_size_metadata["z"] = float(pixels["PhysicalSizeZ"])
@@ -90,7 +82,7 @@ class file_reading_functions:
                 if imagej_metadata.get("spacing") is not None:
                     voxel_size_metadata["z"] = float(imagej_metadata["spacing"])
 
-                page = tif.pages[0]
+                page = tif_series.pages[0]
 
                 x_resolution = page.tags.get("XResolution")
                 y_resolution = page.tags.get("YResolution")
@@ -146,8 +138,55 @@ class file_reading_functions:
                         if y_pixels_per_unit != 0:
                             voxel_size_metadata["y"] = unit_size / y_pixels_per_unit
 
+            return voxel_size_metadata
+        
+    
+        def read_tif_series_as_dask(file_path, seriex_index, tif_series):
+            """
+            Read a single OME-TIFF series as a dask array.
+            Returns the dask array and its axes
+            """
 
-        return img_array, voxel_size_metadata, img_axes
+            # Read the ome.tiff as a zarr
+            tif_store = tifffile.imread(file_path, aszarr=True, series=seriex_index)
+            zarr_array = zarr.open(tif_store, mode="r")
+
+            # Convert the zarr to a dask array
+            img_array = writing_functions.as_dask_array(zarr_array)
+
+            # Get the axes of the data
+            img_axes = "".join(zarr_array.attrs.get("_ARRAY_DIMENSIONS", ""))
+
+            # Fallback if no axes were registered before
+            if not img_axes:
+                img_axes = tif_series.axes
+
+            return img_array, img_axes
+        
+        image_series = []
+
+        # Open the tif file
+        with tifffile.TiffFile(file_path) as tif:
+
+            # Get the data from each series
+            for series_index, tif_series in enumerate(tif.series):
+                img_array, img_axes = read_tif_series_as_dask(file_path, series_index, tif_series)
+
+                # Get the voxel size metadata of the series
+                voxel_size_metadata = get_tif_voxel_size_metadata(tif, tif_series, series_index)
+
+                # Append the information onto the dictionary
+                image_series.append({
+                    "array": img_array,
+                    "axes": img_axes,
+                    "voxel_size_metadata": voxel_size_metadata, 
+                    "name": f"Series {series_index + 1:03d}"
+                })
+
+        if not image_series:
+            raise ValueError(f"No readable image series found in file: {file_path}")
+        
+        return image_series
     
     #--------------------------------------------------------------------------
 
@@ -223,89 +262,6 @@ class file_reading_functions:
     
 
     #--------------------------------------------------------------------------
-    
-    # def read_lif_as_dask(file_path, image_index=0):
-    #     """
-    #     Opens a Leica .lif file.
-    #     Then converts it to a dask array.
-    #     """
-
-    #     def read_lif_zstack(file_path, image_index, t, c, m, Z):
-    #         """
-    #         Helper function to access the .lif data to build the dask array
-    #         """
-    #         lif = LifFile(file_path)
-    #         img = lif.get_image(image_index)
-
-    #         planes = []
-
-    #         for z in range(Z):
-    #             planes.append(np.asarray(img.get_frame(z=z, t=t, c=c, m=m)))
-
-    #         return np.stack(planes, axis=0)
-
-    #     # Access the lif
-    #     lif = LifFile(file_path)
-
-    #     images = list(lif.get_iter_image())
-    #     print(images)
-
-
-
-    #     img = lif.get_image(image_index)
-
-    #     # Get the voxel size
-    #     x_scale, y_scale, z_scale, t_scale = img.info["scale"]
-    #     voxel_size_metadata = {
-    #         "z": 1 / z_scale if z_scale else None,
-    #         "y": 1 / y_scale if y_scale else None,
-    #         "x": 1 / x_scale if x_scale else None,
-    #     }
-
-    #     # Get the dask array
-    #     dims = img.info["dims"]
-
-    #     M = dims.m
-    #     T = dims.t
-    #     C = len(img.bit_depth)
-    #     Z = dims.z
-    #     Y = dims.y
-    #     X = dims.x
-        
-    #     sample = np.asarray(img.get_frame(z=0, t=0, c=0, m=0))
-    #     dtype = sample.dtype
-
-    #     m_planes = []
-    #     for m in range(M):
-    #         t_planes = []
-
-    #         for t in range(T):
-    #             c_planes = []
-
-    #             for c in range(C):
-                    
-    #                 z_stack = dask.delayed(read_lif_zstack)(file_path, image_index, t, c, m, Z)
-    #                 z_stack = dask.array.from_delayed(z_stack, shape=(Z,Y,X), dtype=dtype)
-    #                 c_planes.append(z_stack)
-
-    #             t_stack = dask.array.stack(c_planes, axis=0)
-    #             t_planes.append(t_stack)
-
-    #         m_stack = dask.array.stack(t_planes, axis=0)
-    #         m_planes.append(m_stack)
-
-    #     img_array = dask.array.stack(m_planes, axis=0)
-
-    #     # Get the available axes
-    #     if M > 1:
-    #         img_axes = "MTCZYX"
-    #     else:
-    #         img_array = img_array[0]
-    #         img_axes = "TCZYX"
-
-    #     print(img_array, voxel_size_metadata, img_axes)
-
-    #     return img_array, voxel_size_metadata, img_axes
 
     def read_lif_as_dask(file_path):
         """
@@ -641,19 +597,28 @@ class writing_functions:
 
     def write_ome_tiff(output_path, image_series):
         """
-        Function that takes a dask array as an input and writes its data into an .ome.tif or .ome.tiff file
+        Function that takes a list of dask arrays as an input and writes its data into an .ome.tif or .ome.tiff file
         """
 
-        def get_ome_metadata(voxeL_size_metadata):
+        def get_ome_metadata(voxel_size_metadata, image_name):
             """
             Helper function that computes an OME voxel size dictionary for metadata
             """
 
-            ome_metadata 
+            # Create the OME metadata dictionary
+            ome_metadata = { "axes": "TCZYX",
+                             "Name": image_name}
 
-        # Get the output path
-        output_path = Path(output_path)
-        output_path.parent.mkdir(parents=True, exist_ok=True)
+            if voxel_size_metadata["x"] is not None:
+                ome_metadata["PhysicalSizeX"] = voxel_size_metadata["x"]
+
+            if voxel_size_metadata["y"] is not None:
+                ome_metadata["PhysicalSizeY"] = voxel_size_metadata["y"]
+
+            if voxel_size_metadata["z"] is not None:
+                ome_metadata["PhysicalSizeZ"] = voxel_size_metadata["z"]
+
+            return ome_metadata
 
         def tczyx_plane_access(array, T, C, Z):
             """
@@ -667,57 +632,38 @@ class writing_functions:
                     for z in range(Z):
                         yield np.ascontiguousarray(z_stack[z, :, :])
 
-
-        # Create the OME metadata dictionary
-        ome_metadata = { "axes": "TCZYX",}
-
-        if voxel_size_metadata["x"] is not None:
-            ome_metadata["PhysicalSizeX"] = voxel_size_metadata["x"]
-
-        if voxel_size_metadata["y"] is not None:
-            ome_metadata["PhysicalSizeY"] = voxel_size_metadata["y"]
-
-        if voxel_size_metadata["z"] is not None:
-            ome_metadata["PhysicalSizeZ"] = voxel_size_metadata["z"]
+        # Get the output path
+        output_path = Path(output_path)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
 
         # Initialize the writer
         with tifffile.TiffWriter(output_path, bigtiff=True, ome=True) as ome_tif:
 
-            # Check the axes of the input file to write accordingly
-            if img_axes == "MTCZYX":
+            for series in image_series:
+
+                # Get the data form the singular series
+                img_array = series["array"]
+                img_axes = series["axes"]
+                voxel_size_metadata = series["voxel_size_metadata"]
+                image_name = series["name"]
+
+                # Raise an error if the axes are not in the TCZYX format
+                if img_axes != "TCZYX":
+                    raise ValueError(f"The series must be TCZYX before writing. Got {img_axes}")
 
                 # Get the dimensions
-                M, T, C, Z, Y, X = img_dims
+                T, C, Z, Y, X = img_array.shape
 
-                for m in range(M):
+                # Get the OMe formatted metadata of the series
+                ome_metadata = get_ome_metadata(voxel_size_metadata, image_name)
 
-                    # for testing convenience
-                    # if m + 1 > 4:
-                    #     break
-
-                    ome_tif.write(
-                        data = tczyx_plane_access(img_array[m, :, :, :, :, :], T, C, Z),
-                        shape=(T, C, Z, Y, X),
-                        dtype=img_array.dtype,
-                        photometric="minisblack",
-                        metadata=ome_metadata,
-                        # compression="zlib",
-                        # compressionargs={"level": 6},
-                        maxworkers=1,
-                    )
-
-            else:
-
-                T, C, Z, Y, X = img_dims
-
+                # Write this series into the OME-TIF file
                 ome_tif.write(
                     data=tczyx_plane_access(img_array, T, C, Z),
                     shape=(T, C, Z, Y, X),
                     dtype=img_array.dtype,
                     photometric="minisblack",
                     metadata=ome_metadata,
-                    # compression="zlib",
-                    # compressionargs={"level": 6},
                     maxworkers=1,
                 )
 
@@ -858,10 +804,10 @@ class writing_functions:
 
 # if __name__ == "__main__":
 
-    file = r"C:\Users\simao\Desktop\Repositories\Microscopy_File_Converter\files_for_conversion\lixo\MosaicoIIrregular_Leica.lif"
+#     file = r"C:\Users\simao\Desktop\Repositories\Microscopy_File_Converter\files_for_conversion\lixo\MosaicoIIrregular_Leica.lif"
     
-#     file = 
+# #     file = 
     
-    image_series = file_reading_functions.read_lif_as_dask(file)
+#     image_series = file_reading_functions.read_lif_as_dask(file)
 
-    print(image_series)
+#     print(image_series)
