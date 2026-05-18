@@ -12,16 +12,13 @@
 
 - Change the reading of the file formats into the image_series approach:
     remaining:
-        .zvi
-        .ims
         zarrs - .zarr, .ome.zarr 
 
 ## Metadata
 
 - Preserve time-spacing when available
     reamining
-        .zvi
-        .ims
+        .ims (I WILL NEED A TIME FRAME FILE)
         zarrs - .zarr, .ome.zarr 
 
 

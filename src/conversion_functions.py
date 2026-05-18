@@ -225,25 +225,39 @@ class file_reading_functions:
     def read_omezarr_as_dask(file_path):
         """
         Opens a .zarr or an .ome.zarr as a zarr array in reading.
-        Then converts it to a dask array.
+        Then converts it to a dask array and appends it to a dictionary with the image series
         """
+
+        def get_omezarr_metadata(sim):
+            """
+            Helper function that gets the voxel size and the time frame metadata
+            """
+
+            # Get the voxel size data
+            spacing = si_utils.get_spacing_from_sim(sim)
+
+            # Get the voxel size metadata if available
+            voxel_size_metadata = {
+                "z": spacing.get("z", None),
+                "y": spacing.get("y", None),
+                "x": spacing.get("x", None),
+            }
+
+            # Get the time frame metadata
+            time_metadata = {"t": spacing.get("t", None)}
+
+            return voxel_size_metadata, time_metadata
 
         # Access the ome.zarr in reading mode
         sim = ngff_utils.read_sim_from_ome_zarr(file_path, resolution_level=0)
         img_array = sim.data
 
-        # Get the voxel size data
-        spacing = si_utils.get_spacing_from_sim(sim)
-
-        # Get the voxel size metadata if available
-        voxel_size_metadata = {
-            "z": spacing.get("z", None),
-            "y": spacing.get("y", None),
-            "x": spacing.get("x", None),
-        }
-
         # Get the available axes of the data
         img_axes = "".join(sim.dims).upper()
+
+        image_series = [{
+            ""
+        }]
 
 
         return img_array, voxel_size_metadata, img_axes
@@ -252,14 +266,33 @@ class file_reading_functions:
     #--------------------------------------------------------------------------
 
 
-    def read_ims_as_dask(
-        file_path,
-        resolution_level=0,
-    ):
+    def read_ims_as_dask(file_path, resolution_level=0):
         """
         Opens an Imaris .ims file as a read-only zarr array.
-        Then converts it to a dask array.
+        Then converts it to a dask array and appends it to an image series dictionary
         """
+
+        def get_ims_metadata(ims_store, img_array):
+            """
+            Helper function that gets voxel size and time frame metadata
+            """
+
+            # Get voxel data from ims physical extents given by the metadata
+            Z, Y, X = img_array.shape[-3:]
+
+            x_extent = ( ims_store.ims.read_numerical_dataset_attr("ExtMax0") - ims_store.ims.read_numerical_dataset_attr("ExtMin0") )
+            y_extent = ( ims_store.ims.read_numerical_dataset_attr("ExtMax1") - ims_store.ims.read_numerical_dataset_attr("ExtMin1") )
+            z_extent = ( ims_store.ims.read_numerical_dataset_attr("ExtMax2") - ims_store.ims.read_numerical_dataset_attr("ExtMin2") )
+
+            voxel_size_metadata = {
+                "z": z_extent / Z if Z > 1 else None,
+                "y": y_extent / Y if Y > 1 else None,
+                "x": x_extent / X if X > 1 else None,
+            }
+
+            time_metadata = {"t": None}
+
+            return voxel_size_metadata, time_metadata
 
         # Read the ims as a zarr
         ims_store = imaris_ims_file_reader.ims(
@@ -272,25 +305,18 @@ class file_reading_functions:
         # Converts the zarr to dask
         img_array = writing_functions.as_dask_array(img_array)
 
-        # Get the closing function
-        img_array.close_after_write = ims_store.ims.close
+        # Get the metadata
+        voxel_size_metadata, time_metadata =  get_ims_metadata(ims_store, img_array)
 
-        # Get voxel data from ims physical extents given by the metadata
-        Z, Y, X = img_array.shape[-3:]
+        image_series = [{
+            "array": img_array,
+            "axes": "TCZYX",
+            "voxel_size_metadata": voxel_size_metadata,
+            "time_metadata": time_metadata,
+            "file_close_function": ims_store.ims.close
+        }]
 
-        x_extent = ( ims_store.ims.read_numerical_dataset_attr("ExtMax0") - ims_store.ims.read_numerical_dataset_attr("ExtMin0") )
-        y_extent = ( ims_store.ims.read_numerical_dataset_attr("ExtMax1") - ims_store.ims.read_numerical_dataset_attr("ExtMin1") )
-        z_extent = ( ims_store.ims.read_numerical_dataset_attr("ExtMax2") - ims_store.ims.read_numerical_dataset_attr("ExtMin2") )
-
-        voxel_size_metadata = {
-            "z": z_extent / Z if Z > 1 else None,
-            "y": y_extent / Y if Y > 1 else None,
-            "x": x_extent / X if X > 1 else None,
-        }
-
-        img_axes = "TCZYX"
-
-        return img_array, voxel_size_metadata, img_axes
+        return image_series
     
 
     #--------------------------------------------------------------------------
@@ -503,7 +529,7 @@ class file_reading_functions:
                 "axes": img_axes,
                 "voxel_size_metadata": voxel_size_metadata,
                 "time_metadata": time_metadata,
-                "close_after_write": nd2_file.close   # closing function to be used during conversion
+                "file_close_function": nd2_file.close   # closing function to be used during conversion
             })
 
 

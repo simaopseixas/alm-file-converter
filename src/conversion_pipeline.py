@@ -696,7 +696,7 @@ class file_conversion:
 if __name__ == "__main__":
 
     input_file_path = Path(
-        r"C:\Users\simao\Desktop\Repositories\Microscopy_File_Converter\files_for_conversion\nd2_and_zvi\405_00x.zvi"
+        r"C:\Users\simao\Desktop\Repositories\Microscopy_File_Converter\files_for_conversion\lixo\5.2 HIP6 dapi TH DCX 20x_2026-03-25_09.36.31_F03.ims"
     )
 
     output_file_format = ".ome.tiff"
@@ -711,7 +711,7 @@ if __name__ == "__main__":
         output_file_format,
     )
 
-    image_series = file_reading_functions.read_zvi_as_dask(input_file_path)
+    image_series = file_reading_functions.read_ims_as_dask(input_file_path)
 
     print(image_series)
 
