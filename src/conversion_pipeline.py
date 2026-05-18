@@ -204,6 +204,7 @@ class file_conversion:
         error_traceback = None
         output_file = None
         image_series = None
+        close_after_write_function = []
 
         # Get the output "Conversion Folder" before the reading happens
         output_folder = file_conversion.create_converted_output_folder(input_file_path.parent)
@@ -218,6 +219,13 @@ class file_conversion:
 
                 # Apply the reader function to read the file
                 image_series = reader_function(input_file_path)
+
+                # Get the closing function if it exists on the dictionary
+                close_after_write_function = [
+                    series["file_close_function"]
+                    for series in image_series
+                    if "file_close_function" in series
+                ]
 
                 # Create the appropriate file path
                 output_file = file_conversion.create_output_file_path(output_folder, input_file_path, output_file_format)
@@ -239,8 +247,8 @@ class file_conversion:
 
             finally:
                 # Close any open nd2 or ims file
-                if close_after_write is not None:
-                    close_after_write()
+                for close_function in close_after_write_function:
+                    close_function()
 
             # Garbage collect
             gc.collect()
@@ -263,14 +271,16 @@ class file_conversion:
 
         else:
             # Different prints for different cases
-            if img_axes == "MTCZYX" and output_file_format in (".tif", ".tiff"):
+            if image_series is not None and len(image_series) > 1 and output_file_format in (".tif", ".tiff"):
                 output_format_name = output_file.suffix.replace(".", "")
                 print(
                     f"Saved files to: "
                     f"{output_file.name.removesuffix(output_file.suffix)}_{output_format_name}"
                 )
-            elif img_axes == "MTCZYX" and output_file_format == ".ome.zarr":
+
+            elif image_series is not None and len(image_series) > 1 and output_file_format == ".ome.zarr":
                 print(f"Saved files to: {output_file.name.removesuffix('.ome.zarr')}_omezarr")
+
             else:
                 print(f"Saved File: {output_file.name}")
             print("-----------------------------------------------------------------------------------------------")
