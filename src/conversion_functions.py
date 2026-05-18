@@ -847,23 +847,13 @@ class writing_functions:
 
     #--------------------------------------------------------------------------
 
-    def write_tiff(
-            output_path,
-            img_array,
-            img_dims,
-            img_axes,
-            voxel_size_metadata,
-    ):
+    def write_tiff(output_path, image_series):
         """
-        Function that takes a dask array as an input and writes its data into a .tif or .tiff file.
+        Function that takes a list of dictionaries as an input and writes its data into a .tif or .tiff file.
         These .tif and .tiff files are Fiji/ImageJ compatible.
         ImageJ hyperstacks use TZCYX order, which is handled by this writer.
         ImageJ hyperstacks can also only handle 5D data. For this reason, multi-positions are written as different files.
         """
-
-        # Get the output path
-        output_path = Path(output_path)
-        output_path.parent.mkdir(parents=True, exist_ok=True)
 
         def tzcyx_plane_access(array, T, C, Z):
             """
@@ -877,7 +867,7 @@ class writing_functions:
                     for c in range(C):
                         yield np.ascontiguousarray(c_stack[c, :, :])
 
-        def get_fiji_metadata(T, C, Z, voxel_size_metadata):
+        def get_fiji_metadata(T, C, Z, voxel_size_metadata, time_metadata):
             """
             Helper function that computes axes and voxel size metadata for Fiji/ImageJ
             """
@@ -892,6 +882,7 @@ class writing_functions:
                 "mode": "composite",
             }
 
+            # Get the voxel size metadata
             if voxel_size_metadata["z"] is not None:
                 metadata["spacing"] = voxel_size_metadata["z"]
 
@@ -904,9 +895,13 @@ class writing_functions:
                 # Assume micrometer unit since the reader converts any unit to micrometers
                 metadata["unit"] = "um"
 
+            # Get the time metadata
+            if time_metadata["t"] is not None:
+                metadata["finterval"] = time_metadata["t"]
+
             return metadata
         
-        def get_resolution():
+        def get_resolution(voxel_size_metadata):
             """
             Helper function that gets the resolution in pixels/micrometer
             since that is the resolution that Fiji/ImageJ natively recognizes
@@ -923,59 +918,61 @@ class writing_functions:
                 1 / voxel_size_metadata["y"],
             )
         
+        def write_single_tiff(series_output_path, series):
+            """
+            Helper function that writes a single 5D tif file
+            """
 
-        
-        # Check the axes of the input file to write accordingly
-        if img_axes == "MTCZYX":
+            # Get the series data
+            img_array = series["array"]
+            img_axes = series["axes"]
+            voxel_size_metadata = series["voxel_size_metadata"]
+            time_metadata = series["time_metadata"]
 
-            # Get the dimensions
-            M, T, C, Z, Y, X = img_dims
+            # Raise an error if the axes are not the correct ones
+            if img_axes != "TCZYX":
+                raise ValueError(f"The series must be TCZYX before writing. Got {img_axes}")
+            
+            # Get the shape of the data
+            T, C, Z, Y, X = img_array.shape
 
-            # Create the folder in which the positions will be saved in
-            output_format_name = output_path.suffix.replace(".", "")
-
-            mosaic_folder = output_path.with_name(
-                f"{output_path.name.removesuffix(output_path.suffix)}_{output_format_name}"
-            )
-
-            mosaic_folder.mkdir(parents=True, exist_ok=True)
-
-            for m in range(M):
-
-                # for testing convenience
-                # if m + 1 > 4:
-                #     break
-                
-
-                mosaic_output_path = mosaic_folder / (
-                    f"{output_path.stem}_mosaic_{m + 1}{output_path.suffix}"
-                )
-
-                # Initialize the writer
-                with tifffile.TiffWriter(mosaic_output_path, imagej=True) as tif:
-                    tif.write(
-                        data=tzcyx_plane_access(img_array[m, :, :, :, :, :], T, C, Z),
-                        shape=(T, Z, C, Y, X),
-                        dtype=img_array.dtype,
-                        photometric="minisblack",
-                        metadata=get_fiji_metadata(T, C, Z, voxel_size_metadata),
-                        resolution=get_resolution(),
-                    )
-
-        else:
-
-            T, C, Z, Y, X = img_dims
-
-            # Initialize the writer
-            with tifffile.TiffWriter(output_path, imagej=True) as tif:
+            # Write the tif file
+            with tifffile.TiffWriter(series_output_path, imagej=True) as tif:
                 tif.write(
                     data=tzcyx_plane_access(img_array, T, C, Z),
                     shape=(T, Z, C, Y, X),
                     dtype=img_array.dtype,
                     photometric="minisblack",
-                    metadata=get_fiji_metadata(T, C, Z, voxel_size_metadata),
-                    resolution=get_resolution(),
+                    metadata=get_fiji_metadata(T, C, Z, voxel_size_metadata, time_metadata),
+                    resolution=get_resolution(voxel_size_metadata),
                 )
+
+        # Get the output path
+        output_path = Path(output_path)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Write the tif if there is a single series in the list
+        if len(image_series) == 1:
+            write_single_tiff(output_path, image_series[0])
+
+        # If there is more than one series in the list
+        else:
+            # Create the folder in which the positions will be saved in
+            output_format_name = output_path.suffix.replace(".", "")
+
+            series_folder = output_path.with_name(
+                f"{output_path.name.removesuffix(output_path.suffix)}_{output_format_name}"
+            )
+
+            series_folder.mkdir(parents=True, exist_ok=True)
+
+            # Write a file for each of the available series
+            for series_index, series in enumerate(image_series, start=1):
+                series_output_path = series_folder / (
+                    f"{output_path.stem}_series_{series_index}{output_path.suffix}"
+                )
+
+                write_single_tiff(series_output_path, series)
 
     #--------------------------------------------------------------------------
 
