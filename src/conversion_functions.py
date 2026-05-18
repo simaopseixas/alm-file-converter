@@ -41,10 +41,9 @@ class file_reading_functions:
         Opens the data as a dask array and returns a list of them, as independent image series dictionaries.
         """
 
-        def get_tif_voxel_size_metadata(tif, tif_series, series_index):
+        def get_tif_metadata(tif, tif_series, series_index):
             """
-            Get voxel size metadata from OME or Imagej standard TIFF metadata.
-            When accessed, these values are returned as micrometers.
+            Get voxel size metadata, time frame and series name from OME or Imagej standard TIFF metadata.
             """
 
             voxel_size_metadata = {
@@ -52,6 +51,12 @@ class file_reading_functions:
                 "y": None,
                 "x": None,
             }
+
+            ome_image = None
+            pixels = None
+
+            #--------------------------------------------------------------------
+            # Voxel size
 
             # Get OME voxel size metadata
             if tif.ome_metadata:
@@ -72,7 +77,7 @@ class file_reading_functions:
                 if pixels.get("PhysicalSizeX") is not None:
                     voxel_size_metadata["x"] = float(pixels["PhysicalSizeX"])
 
-            # Get any available voxel size metadata for not OME files
+            # Get any available voxel size metadata for not OME files with ImageJ standards
             if not tif.ome_metadata:
 
                 # Get any available ImageJ metadata, if there is any
@@ -138,7 +143,44 @@ class file_reading_functions:
                         if y_pixels_per_unit != 0:
                             voxel_size_metadata["y"] = unit_size / y_pixels_per_unit
 
-            return voxel_size_metadata
+            #--------------------------------------------------------------------
+            # Time Frame
+
+            time_metadata = {"t": None}
+
+            # Get OME time metadata
+            if pixels is not None:
+                if pixels.get("TimeIncrement") is not None:
+                    time_metadata["t"] = float(pixels["TimeIncrement"])
+
+            # If OME metadata is not available, get it with the ImageJ standards
+            else:
+                # Get any available ImageJ metadata, if there is any
+                imagej_metadata = tif.imagej_metadata or {}
+
+                # If there is direct time frame interval
+                if imagej_metadata.get("finterval") is not None:
+                    time_metadata["t"] = float(imagej_metadata["finterval"])
+
+                # If there is an FPS measure
+                elif imagej_metadata.get("fps") is not None:
+                    fps = float(imagej_metadata["fps"])
+
+                    if fps != 0:
+                        time_metadata["t"] = 1 / fps
+
+
+            #--------------------------------------------------------------------
+            # Series Name
+
+            name_metadata = f"Series {series_index + 1:03d}"
+
+            # Get the series name if OME available or not
+            if ome_image is not None and ome_image.get("Name") is not None:
+                name_metadata = str(ome_image["Name"])
+
+            return voxel_size_metadata, time_metadata, name_metadata
+
         
     
         def read_tif_series_as_dask(file_path, seriex_index, tif_series):
@@ -172,15 +214,16 @@ class file_reading_functions:
             for series_index, tif_series in enumerate(tif.series):
                 img_array, img_axes = read_tif_series_as_dask(file_path, series_index, tif_series)
 
-                # Get the voxel size metadata of the series
-                voxel_size_metadata = get_tif_voxel_size_metadata(tif, tif_series, series_index)
+                # Get the metadata of the series
+                voxel_size_metadata, time_metadata, series_name = get_tif_metadata(tif, tif_series, series_index)
 
                 # Append the information onto the dictionary
                 image_series.append({
                     "array": img_array,
                     "axes": img_axes,
-                    "voxel_size_metadata": voxel_size_metadata, 
-                    "name": f"Series {series_index + 1:03d}"
+                    "voxel_size_metadata": voxel_size_metadata,
+                    "time_metadata": time_metadata,
+                    "name": series_name
                 })
 
         if not image_series:
@@ -345,6 +388,9 @@ class file_reading_functions:
                 "x": 1 / x_scale if x_scale else None,
             }
 
+            # Get time metadata
+            time_metadata = {"t": 1 / t_scale if t_scale else None} # in seconds
+
             # For each mosaic inside the "series"
             for m in range(M):
 
@@ -363,6 +409,7 @@ class file_reading_functions:
                     "array": image_array,
                     "axes": "TCZYX",
                     "voxel_size_metadata": voxel_size_metadata,
+                    "time_metadata": time_metadata,
                     "name": image_name,
                 })
 
@@ -600,7 +647,7 @@ class writing_functions:
         Function that takes a list of dask arrays as an input and writes its data into an .ome.tif or .ome.tiff file
         """
 
-        def get_ome_metadata(voxel_size_metadata, image_name):
+        def get_ome_metadata(voxel_size_metadata, time_metadata, image_name):
             """
             Helper function that computes an OME voxel size dictionary for metadata
             """
@@ -617,6 +664,10 @@ class writing_functions:
 
             if voxel_size_metadata["z"] is not None:
                 ome_metadata["PhysicalSizeZ"] = voxel_size_metadata["z"]
+
+            if time_metadata["t"] is not None:
+                ome_metadata["TimeIncrement"] = time_metadata["t"]
+                ome_metadata["TimeIncrementUnit"] = "s"
 
             return ome_metadata
 
@@ -645,6 +696,7 @@ class writing_functions:
                 img_array = series["array"]
                 img_axes = series["axes"]
                 voxel_size_metadata = series["voxel_size_metadata"]
+                time_metadata = series["time_metadata"]
                 image_name = series["name"]
 
                 # Raise an error if the axes are not in the TCZYX format
@@ -655,7 +707,7 @@ class writing_functions:
                 T, C, Z, Y, X = img_array.shape
 
                 # Get the OMe formatted metadata of the series
-                ome_metadata = get_ome_metadata(voxel_size_metadata, image_name)
+                ome_metadata = get_ome_metadata(voxel_size_metadata, time_metadata, image_name)
 
                 # Write this series into the OME-TIF file
                 ome_tif.write(
