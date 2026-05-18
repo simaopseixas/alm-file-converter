@@ -220,9 +220,11 @@ class file_reading_functions:
         
         return image_series
     
+
     #--------------------------------------------------------------------------
 
-    def read_omezarr_as_dask(file_path):
+
+    def read_zarrs_as_dask(file_path):
         """
         Opens a .zarr or an .ome.zarr as a zarr array in reading.
         Then converts it to a dask array and appends it to a dictionary with the image series
@@ -255,12 +257,17 @@ class file_reading_functions:
         # Get the available axes of the data
         img_axes = "".join(sim.dims).upper()
 
+        # Get the metadata
+        voxel_size_metadata, time_metadata = get_omezarr_metadata(sim)
+
         image_series = [{
-            ""
+            "array": img_array,
+            "axes": img_axes,
+            "voxel_size_metadata": voxel_size_metadata,
+            "time_metadata": time_metadata,
         }]
 
-
-        return img_array, voxel_size_metadata, img_axes
+        return image_series
     
     
     #--------------------------------------------------------------------------
