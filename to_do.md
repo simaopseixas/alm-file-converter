@@ -10,28 +10,16 @@
 
 - Maybe chagne the omezarr writing protocol, since the multiview-stitcher sim is taking some time
 
-- Change the rading of the file formats into the image_series approach:
+- Change the reading of the file formats into the image_series approach:
     remaining:
-        .nd2
-        tifs - .tif, .itff, .ome.tif, .ome-tiff
         .zvi
         .ims
         zarrs - .zarr, .ome.zarr 
 
 ## Metadata
 
-- Preserve series name when available:
-    reamining
-        .nd2
-        tifs - .tif, .itff, .ome.tif, .ome-tiff
-        .zvi
-        .ims
-        zarrs - .zarr, .ome.zarr 
-
 - Preserve time-spacing when available
     reamining
-        .nd2
-        tifs - .tif, .itff, .ome.tif, .ome-tiff
         .zvi
         .ims
         zarrs - .zarr, .ome.zarr 

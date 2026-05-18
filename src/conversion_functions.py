@@ -43,7 +43,7 @@ class file_reading_functions:
 
         def get_tif_metadata(tif, tif_series, series_index):
             """
-            Get voxel size metadata, time frame and series name from OME or Imagej standard TIFF metadata.
+            Get voxel size metadata and time frame from OME or Imagej standard TIFF metadata.
             """
 
             voxel_size_metadata = {
@@ -169,17 +169,7 @@ class file_reading_functions:
                     if fps != 0:
                         time_metadata["t"] = 1 / fps
 
-
-            #--------------------------------------------------------------------
-            # Series Name
-
-            name_metadata = f"Series {series_index + 1:03d}"
-
-            # Get the series name if OME available or not
-            if ome_image is not None and ome_image.get("Name") is not None:
-                name_metadata = str(ome_image["Name"])
-
-            return voxel_size_metadata, time_metadata, name_metadata
+            return voxel_size_metadata, time_metadata
 
         
     
@@ -215,15 +205,14 @@ class file_reading_functions:
                 img_array, img_axes = read_tif_series_as_dask(file_path, series_index, tif_series)
 
                 # Get the metadata of the series
-                voxel_size_metadata, time_metadata, series_name = get_tif_metadata(tif, tif_series, series_index)
+                voxel_size_metadata, time_metadata = get_tif_metadata(tif, tif_series, series_index)
 
                 # Append the information onto the dictionary
                 image_series.append({
                     "array": img_array,
                     "axes": img_axes,
                     "voxel_size_metadata": voxel_size_metadata,
-                    "time_metadata": time_metadata,
-                    "name": series_name
+                    "time_metadata": time_metadata
                 })
 
         if not image_series:
@@ -397,20 +386,12 @@ class file_reading_functions:
                 # Compute the TCZYX dask array
                 image_array = build_tczyx_array(file_path, image_index, img, m)
 
-                # Get the series name
-                image_name = getattr(img, "name", f"Series{image_index + 1:03d}")
-
-                # Get the number of the mosaic if there are more mosaics available
-                if M > 1:
-                    image_name = f"{image_name}"
-
                 # Append the mosaic information on the list
                 image_series.append({
                     "array": image_array,
                     "axes": "TCZYX",
                     "voxel_size_metadata": voxel_size_metadata,
                     "time_metadata": time_metadata,
-                    "name": image_name,
                 })
 
         return image_series
@@ -420,8 +401,60 @@ class file_reading_functions:
 
     def read_nd2_as_dask(file_path):
         """
-        Opens a Nikon .nd2 as a dask array
+        Opens a Nikon .nd2 file as a dask array and returns a list of image series dictionaries
         """
+
+        def get_nd2_metadata(nd2_file, series_index=None):
+            """
+            Helper function that gets the voxel size and time frame
+            """
+
+            #------------------------------------------------------
+            # Voxel size
+
+            voxel_size = nd2_file.voxel_size()
+
+            # Get the metadata dictionary
+            voxel_size_metadata = {
+                "z": voxel_size.z if voxel_size.z else None,
+                "y": voxel_size.y if voxel_size.y else None,
+                "x": voxel_size.x if voxel_size.x else None,
+            }
+
+            #------------------------------------------------------
+            # Time Frame
+
+            time_metadata = {"t": None}
+
+            for loop in nd2_file.experiment:
+
+                # See if there is an available TimeLoop in the file
+                if getattr(loop, "type", None) == "TimeLoop":
+                    # Get the TimeLoop parameters
+                    parameters = getattr(loop, "parameters", None)
+
+                    if parameters is None:
+                        continue
+
+                    # Get the periodMs parameter
+                    period_ms = getattr(parameters, "periodMs", None)
+
+                    # If periodMs exists, append it to the time frame metadata
+                    if period_ms is not None and period_ms > 0:
+                        time_metadata["t"] = period_ms / 1000
+                        break
+
+                    # If periodMs doesn't exist, try periodDiff
+                    period_diff = getattr(parameters, "periodDiff", None)
+                    avg_ms = getattr(period_diff, "avg", None) if period_diff is not None else None
+
+                    # If periodDiff exists, append it to the time frame metadata
+                    if avg_ms is not None and avg_ms > 0:
+                        time_metadata["t"] = avg_ms / 1000
+                        break
+
+            return voxel_size_metadata, time_metadata
+        
 
         # Access the nd2 file
         nd2_file = nd2.ND2File(file_path)
@@ -429,25 +462,53 @@ class file_reading_functions:
         # Converts the access to dask
         img_array = nd2_file.to_dask()
 
-        # Get the closing file function
-        img_array.close_after_write = nd2_file.close
+        # Get the axes
+        img_axes = "".join(nd2_file.sizes.keys()).upper()
 
-        # Change the axes nomenclature to match the .lif M
-        img_axes = "".join(nd2_file.sizes.keys()).upper()        
-        img_axes = img_axes.replace("P", "M")
-        img_axes = img_axes.replace("V", "M")
+        # Get metadata
+        voxel_size_metadata, time_metadata = get_nd2_metadata(nd2_file)
 
-        # Get the voxel size from the file
-        voxel_size = nd2_file.voxel_size()
+        # Detect ND2 position/view axis
+        position_axis_name = None
 
-        # Convert to metadata dictionary
-        voxel_size_metadata = {
-            "z": voxel_size.z if voxel_size.z else None,
-            "y": voxel_size.y if voxel_size.y else None,
-            "x": voxel_size.x if voxel_size.x else None,
-        }
+        if "P" in img_axes:
+            position_axis_name = "P"
 
-        return img_array, voxel_size_metadata, img_axes
+        elif "V" in img_axes:
+            position_axis_name = "V"
+
+        image_series = []
+
+        # If there are indeed different positions/views
+        if position_axis_name is not None:
+
+            position_axis = img_axes.index(position_axis_name)
+            n_positions = img_array.shape[position_axis]
+            series_axes = img_axes.replace(position_axis_name, "")
+
+            for p in range(n_positions):
+
+                image_array = dask.array.take(img_array, p, axis=position_axis)
+                image_series.append({
+                    "array": image_array,
+                    "axes": series_axes,
+                    "voxel_size_metadata": voxel_size_metadata,
+                    "time_metadata": time_metadata
+                })
+
+        # If there is only one series
+        else:
+            image_series.append({
+                "array": img_array,
+                "axes": img_axes,
+                "voxel_size_metadata": voxel_size_metadata,
+                "time_metadata": time_metadata,
+                "close_after_write": nd2_file.close   # closing function to be used during conversion
+            })
+
+
+        return image_series
+
     
     #--------------------------------------------------------------------------
 
@@ -456,7 +517,30 @@ class file_reading_functions:
         Opens a Zeiss .zvi as a dask array.
         This function doesn't function lazily. Since .zvi doesn't support lazy reading, 
         the whole dataset is loaded into memory as a numpy array and converted to dask.
+        Then the function returns a dictionary with the dataset and metadata
         """
+
+        def get_zvi_metadata(zvi_img):
+            """
+            Helper function that gets the voxel size and time frame metadata
+            """
+
+            # Get voxel size metadata, if accessible through BioIO
+            voxel_sizes = zvi_img.physical_pixel_sizes
+
+            voxel_size_metadata = {
+                "z": voxel_sizes.Z,
+                "y": voxel_sizes.Y,
+                "x": voxel_sizes.X
+            }
+
+            # Get time metadata, if accessible through BioIO
+            time_metadata = {
+                "t": zvi_img.time_interval if zvi_img.time_interval else None,
+            }
+
+            return voxel_size_metadata, time_metadata
+
 
         # Access the .zvi file
         img = BioImage(file_path, reader=bioio_bioformats.Reader)
@@ -464,14 +548,8 @@ class file_reading_functions:
         # Get the data into numpy
         img_array = img.get_image_data("TCZYX")
 
-        # Get voxel size metadata, if accessible through Bio-Formats
-        voxel_sizes = img.physical_pixel_sizes
-
-        voxel_size_metadata = {
-            "z": voxel_sizes.Z,
-            "y": voxel_sizes.Y,
-            "x": voxel_sizes.X
-        }
+        # Get the metadata
+        voxel_size_metadata, time_metadata = get_zvi_metadata(img)
 
         # Convert the numpy array to dask, to make it compatible with the conversion pipeline
         img_array = dask.array.from_array(
@@ -479,9 +557,15 @@ class file_reading_functions:
             chunks=(1,1,1,img_array.shape[-2],img_array.shape[-1])
         )
 
-        img_axes = "TCZYX"
+        image_series = [{
+            "array": img_array,
+            "axes": "TCZYX",
+            "voxel_size_metadata": voxel_size_metadata,
+            "time_metadata": time_metadata
+        }]
 
-        return img_array, voxel_size_metadata, img_axes
+
+        return image_series
     
 #################################################################
 # File Writing Functions
@@ -647,14 +731,13 @@ class writing_functions:
         Function that takes a list of dask arrays as an input and writes its data into an .ome.tif or .ome.tiff file
         """
 
-        def get_ome_metadata(voxel_size_metadata, time_metadata, image_name):
+        def get_ome_metadata(voxel_size_metadata, time_metadata):
             """
             Helper function that computes an OME voxel size dictionary for metadata
             """
 
             # Create the OME metadata dictionary
-            ome_metadata = { "axes": "TCZYX",
-                             "Name": image_name}
+            ome_metadata = { "axes": "TCZYX"}
 
             if voxel_size_metadata["x"] is not None:
                 ome_metadata["PhysicalSizeX"] = voxel_size_metadata["x"]
@@ -697,7 +780,6 @@ class writing_functions:
                 img_axes = series["axes"]
                 voxel_size_metadata = series["voxel_size_metadata"]
                 time_metadata = series["time_metadata"]
-                image_name = series["name"]
 
                 # Raise an error if the axes are not in the TCZYX format
                 if img_axes != "TCZYX":
@@ -706,8 +788,8 @@ class writing_functions:
                 # Get the dimensions
                 T, C, Z, Y, X = img_array.shape
 
-                # Get the OMe formatted metadata of the series
-                ome_metadata = get_ome_metadata(voxel_size_metadata, time_metadata, image_name)
+                # Get the OME formatted metadata of the series
+                ome_metadata = get_ome_metadata(voxel_size_metadata, time_metadata)
 
                 # Write this series into the OME-TIF file
                 ome_tif.write(
