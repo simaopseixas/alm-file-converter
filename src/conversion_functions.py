@@ -669,105 +669,101 @@ class writing_functions:
 
     #--------------------------------------------------------------------------
     
-    def write_ome_zarr(
-            output_path,
-            img_array,
-            img_dims,
-            img_axes,
-            voxel_size_metadata,
-    ):
+    def write_ome_zarr(output_path, image_series):
         """
-        Function that takes a dask array as an input and writes its data into an .ome.zarr file
+        Function that takes a list of dictionaries with image series data as an input
+        and writes it into an .ome.zarr file
         """
+
+        def get_scale(voxel_size_metadata, time_metadata):
+            """
+            Helper function that returns the voxel size and time metadata for the OME-ZARR writing
+            """
+
+            # Compute the dictionary
+            scale = {
+                "t": time_metadata["t"] if time_metadata["t"] is not None else 1,
+                "z": voxel_size_metadata["z"] if voxel_size_metadata["z"] is not None else 1,
+                "y": voxel_size_metadata["y"] if voxel_size_metadata["y"] is not None else 1,
+                "x": voxel_size_metadata["x"] if voxel_size_metadata["x"] is not None else 1,
+            }
+
+            return scale
         
-        output_path = Path(output_path)
+        def write_single_ome_zarr(series_output_path, series):
+            """
+            Helper function that writes a single 5D OME-ZARR file
+            """
 
-        # Compute the voxel size metadata to write
-        scale = {
-            "z": voxel_size_metadata["z"] if voxel_size_metadata["z"] is not None else 1,
-            "y": voxel_size_metadata["y"] if voxel_size_metadata["y"] is not None else 1,
-            "x": voxel_size_metadata["x"] if voxel_size_metadata["x"] is not None else 1,
-        }
-        
-        # If the file that was read has 6 available dimensions, meaning Mosaics + TCZYX
-        if img_axes == "MTCZYX":
+            # Get the series data
+            img_array = series["array"]
+            img_axes = series["axes"]
+            voxel_size_metadata = series["voxel_size_metadata"]
+            time_metadata = series["time_metadata"]
 
-            # Get the dimensions
-            M, T, C, Z, Y, X = img_dims
-
-            # Create e new folder for the mosaics to be saved to
-            output_format_name = ".ome.zarr".replace(".", "")
-
-            mosaic_folder = output_path.with_name(
-                f"{output_path.name.removesuffix('.ome.zarr')}_{output_format_name}"
-            )
-
-            mosaic_folder.mkdir(parents=True, exist_ok=True)
-
-            for m in range(M):
-
-                # for testing convenience
-                # if m + 1 > 2:
-                #     break
-
-                # Change the name of the output mosaic filename
-                mosaic_output_path = mosaic_folder / (
-                    f"{output_path.name.removesuffix('.ome.zarr')}_mosaic_{m + 1}.ome.zarr"
-                )
-
-                sim = si_utils.get_sim_from_array(
-                    img_array[m,:,:,:,:,:],
-                    dims = ["t", "c", "z", "y", "x"],
-                    scale=scale,
-                    translation={
-                        "z": 0,
-                        "y": 0,
-                        "x": 0,
-                    },
-                    transform_key="stage_metadata",
-                    c_coords=[f"channel_{i}" for i in range(C)],
-                    t_coords=list(range(T)),
-                )
-                
-                ngff_utils.write_sim_to_ome_zarr(
-                    sim,
-                    output_zarr_url=str(mosaic_output_path),
-                    overwrite=True,
-                    ngff_version="0.4",
-                )
-
-
-        # If there are only 5 dimensions, TCZYX
-        else:
+            # Raise an error if the axes are not TCZYX
+            if img_axes != "TCZYX":
+                raise ValueError(f"The series must be TCZYX before writing. Got {img_axes}")
             
-            # Create simply the 5D file
-            output_path.parent.mkdir(parents=True, exist_ok=True)
+            # Get the shape of the data
+            T, C, Z, Y, X = img_array.shape
 
-            # Get the dimensions
-            T, C, Z, Y, X = img_dims
+            # Get the metadata
+            scale = get_scale(voxel_size_metadata, time_metadata)
 
+            # Create the sim object
             sim = si_utils.get_sim_from_array(
                 img_array,
                 dims = ["t", "c", "z", "y", "x"],
-                scale=scale,
-                translation={
+                scale = scale,
+                translation = {
                     "z": 0,
                     "y": 0,
-                    "x": 0,
-                },
+                    "x": 0},
                 transform_key="stage_metadata",
                 c_coords=[f"channel_{i}" for i in range(C)],
                 t_coords=list(range(T)),
             )
-            
+
+            # Write the OME-Zarr
             ngff_utils.write_sim_to_ome_zarr(
                 sim,
-                output_zarr_url=str(output_path),
+                output_zarr_url=str(series_output_path),
                 overwrite=True,
                 ngff_version="0.4",
             )
 
+        # Get the output path
+        output_path = Path(output_path)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # If there is a single series
+        if len(image_series) == 1:
+            write_single_ome_zarr(output_path, image_series[0])
+
+        # If there is more than one series in the list
+        else:
+
+            # Create the folder in which the series will be saved
+            output_format_name = ".ome.zarr".replace(".", "")
+
+            series_folder = output_path.with_name(
+                f"{output_path.name.removesuffix('.ome.zarr')}_{output_format_name}"
+            )
+
+            series_folder.mkdir(parents=True, exist_ok=True)
+
+            # Write a file for each of the available series
+            for series_index, series in enumerate(image_series, start=1):
+                series_output_path = series_folder / (
+                    f"{output_path.name.removesuffix('.ome.zarr')}_series_{series_index}.ome.zarr"
+                )
+
+                write_single_ome_zarr(series_output_path, series)
+
+
     #--------------------------------------------------------------------------
+
 
     def write_ome_tiff(output_path, image_series):
         """
@@ -973,6 +969,7 @@ class writing_functions:
                 )
 
                 write_single_tiff(series_output_path, series)
+
 
     #--------------------------------------------------------------------------
 
