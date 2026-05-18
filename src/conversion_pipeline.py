@@ -65,8 +65,11 @@ class file_conversion:
 
         for file_index, input_file_path in enumerate(input_file_paths, start=1):
 
+            # Get the disk space that the file occupies
+            file_size = file_conversion.get_disk_space_string(input_file_path)
+
             print()
-            print(f"Converting file {file_index}/{n_files}: {input_file_path.name} to {output_file_format}")
+            print(f"Converting file {file_index}/{n_files}: {input_file_path.name} to {output_file_format} ({file_size})")
 
             conversion_failed = False
             error_message = None
@@ -186,9 +189,12 @@ class file_conversion:
         if input_file_path is None:
             return
         
+        # Get the disk space that the file occupies
+        file_size = file_conversion.get_disk_space_string(input_file_path)
+        
         print()
         print("-----------------------------------------------------------------------------------------------")
-        print(f"Converting File: {input_file_path.name} to {output_file_format}")
+        print(f"Converting File: {input_file_path.name} to {output_file_format} ({file_size})")
 
         conversion_failed = False
         error_message = None
@@ -282,9 +288,12 @@ class file_conversion:
         if input_file_path is None:
             return
         
+        # Get the disk space that the file occupies
+        file_size = file_conversion.get_disk_space_string(input_file_path)
+        
         print()
         print("-----------------------------------------------------------------------------------------------")
-        print(f"Converting File: {input_file_path.name} to {output_file_format}")
+        print(f"Converting File: {input_file_path.name} to {output_file_format} ({file_size})")
 
         conversion_failed = False
         error_message = None
@@ -659,9 +668,7 @@ class file_conversion:
         print()
         print(f"Conversion report saved to: {report_path_to_print}")
 
-
     #--------------------------------------------------------------------------
-
 
     def create_single_file_error_report(output_folder, input_file_path, error_message, error_traceback):
         """
@@ -684,12 +691,49 @@ class file_conversion:
         print()
         print(f"Conversion error report saved to: {report_file}")
 
+    #--------------------------------------------------------------------------
+
+    def get_disk_space(input_file_path):
+        """
+        Helper function that returns the disk space that a file occupies
+        """
+
+        input_file_path = Path(input_file_path)
+
+        # Get the disk space that the file occupies
+        if input_file_path.is_file():
+            size_bytes = input_file_path.stat().st_size
+
+        # Get the disk space that the folder occupies, in the case of ZARR files
+        elif input_file_path.is_dir():
+            size_bytes = sum(
+                file.stat().st_size
+                for file in input_file_path.rglob("*")
+                if file.is_file()
+            )
+
+        # In case neither of the previous ones worked
+        else:
+            return "Unkown size"
+        
+        units = ["B", "KB", "MB", "GB", "TB"]
+        size = float(size_bytes)
+
+        # Get the correct unit
+        for unit in units:
+            if size < 1024 or unit == units[-1]:
+                break
+            size /= 1024
+
+        return f"{size:.2f} {unit}"
 
 if __name__ == "__main__":
 
     input_file_path = Path(
-        r"C:\Users\simao\Desktop\Repositories\Microscopy_File_Converter\files_for_conversion\files for github image\Position1_Camera2.ome.zarr"
+        r"C:\Users\simao\Desktop\Repositories\Microscopy_File_Converter\files_for_conversion\lixo\Converted Files\MosaicoIIrregular_Leica.ome.tiff"
     )
+
+    print(file_conversion.get_disk_space(input_file_path))
 
     output_file_format = ".ome.tiff"
 
@@ -703,17 +747,17 @@ if __name__ == "__main__":
         output_file_format,
     )
 
-    image_series = file_reading_functions.read_zarrs_as_dask(input_file_path)
+    image_series = file_reading_functions.read_tifs_as_dask(input_file_path)
 
     print(image_series)
 
-    for series in image_series:
-        series["array"], series["axes"] = writing_functions.normalize_to_tczyx(
-            series["array"],
-            series["axes"],
-        )
+    # for series in image_series:
+    #     series["array"], series["axes"] = writing_functions.normalize_to_tczyx(
+    #         series["array"],
+    #         series["axes"],
+    #     )
 
-    writing_functions.write_ome_tiff(
-        output_file,
-        image_series,
-    )
+    # writing_functions.write_ome_tiff(
+    #     output_file,
+    #     image_series,
+    # )

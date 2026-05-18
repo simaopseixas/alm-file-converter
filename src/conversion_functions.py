@@ -257,6 +257,12 @@ class file_reading_functions:
         # Get the available axes of the data
         img_axes = "".join(sim.dims).upper()
 
+        # Raise an error if the ZARR has more than 5 dimensions
+        if img_array.ndim > 5:
+            raise ValueError(
+                f"OME-Zarr data must be 2D to 5D. Got {img_array.ndim}D with axes {img_axes}."
+            )
+
         # Get the metadata
         voxel_size_metadata, time_metadata = get_omezarr_metadata(sim)
 
