@@ -10,7 +10,6 @@ from __future__ import annotations
 from pathlib import Path
 
 import zarr
-import imaris_ims_file_reader
 import tifffile
 import dask.array
 import dask
@@ -27,6 +26,8 @@ from bioio import BioImage
 import bioio_bioformats
 
 import ngff_zarr as nz
+
+import h5py
 
 #################################################################
 # File Reading Functions
@@ -279,60 +280,124 @@ class file_reading_functions:
     
     
     #--------------------------------------------------------------------------
-
-
+    
     def read_ims_as_dask(file_path, resolution_level=0):
         """
-        Opens an Imaris .ims file as a read-only zarr array.
-        Then converts it to a dask array and appends it to an image series dictionary
+        Opens an Imaris .ims file with HDF5 and converts it into a dask array.
+        Returns the data as a list with a dictionary.
         """
 
-        def get_ims_metadata(ims_store, img_array):
+        def get_attr_text(value):
             """
-            Helper function that gets voxel size and time frame metadata
+            Helper function that converts an HDF5 attribute into simple text
             """
 
-            # Get voxel data from ims physical extents given by the metadata
-            Z, Y, X = img_array.shape[-3:]
+            # Convert the value into an array
+            value = np.asarray(value)
 
-            x_extent = ( ims_store.ims.read_numerical_dataset_attr("ExtMax0") - ims_store.ims.read_numerical_dataset_attr("ExtMin0") )
-            y_extent = ( ims_store.ims.read_numerical_dataset_attr("ExtMax1") - ims_store.ims.read_numerical_dataset_attr("ExtMin1") )
-            z_extent = ( ims_store.ims.read_numerical_dataset_attr("ExtMax2") - ims_store.ims.read_numerical_dataset_attr("ExtMin2") )
+            # Check if the array contains byte strings
+            if value.dtype.kind == "S":
+                # If it does, convert the data to a simple string
+                return b"".join(value.tolist()).decode("utf-8", errors="ignore")
+            
+            else:
+                return str(value)
+            
+        def get_attr_float(group, name):
+            """
+            Helper function that converts an HDF5 attribute into a float value
+            """
+            return float(get_attr_text(group.attrs[name]))
+        
+        def get_attr_int(group, name):
+            """
+            Helper function that converets an HDF5 attribute into an integer value
+            """
+            return int(float(get_attr_text(group.attrs[name])))
+        
+        def get_ims_metadata(ims_file, img_array):
+            """
+            Helper function that gets the voxel size and the time frame metadata
+            """
 
+            # Get the image available metadata
+            image_info = ims_file["DataSetInfo"]["Image"]
+
+            # Retrieve the image's extents, to calculate the voxel size
+            x_extent = get_attr_float(image_info, "ExtMax0") - get_attr_float(image_info, "ExtMin0")
+            y_extent = get_attr_float(image_info, "ExtMax1") - get_attr_float(image_info, "ExtMin1")
+            z_extent = get_attr_float(image_info, "ExtMax2") - get_attr_float(image_info, "ExtMin2")
+
+            # Get the data shape
+            T, C, Z, Y, X = img_array.shape
+
+            # Calculate the voxel size
             voxel_size_metadata = {
                 "z": z_extent / Z if Z > 1 else None,
                 "y": y_extent / Y if Y > 1 else None,
                 "x": x_extent / X if X > 1 else None,
             }
 
+            # Fill the time data as None
             time_metadata = {"t": None}
 
             return voxel_size_metadata, time_metadata
+        
+        # Read the ims
+        ims_file = h5py.File(file_path, "r")
 
-        # Read the ims as a zarr
-        ims_store = imaris_ims_file_reader.ims(
-            str(file_path),
-            ResolutionLevelLock=resolution_level,
-            aszarr=True,
+        # Choose the resolution level
+        resolution_group = ims_file["DataSet"][f"ResolutionLevel {resolution_level}"]
+
+        # Get the available timepoints
+        timepoint_names = sorted(
+            resolution_group.keys(),
+            key=lambda name: int(name.split()[-1]),
         )
-        img_array = zarr.open(ims_store, mode="r")
 
-        # Converts the zarr to dask
-        img_array = writing_functions.as_dask_array(img_array)
+        # Get the available channels
+        channel_names = sorted(
+            resolution_group[timepoint_names[0]].keys(),
+            key=lambda name: int(name.split()[-1]),
+        )
 
-        # Get the metadata
-        voxel_size_metadata, time_metadata =  get_ims_metadata(ims_store, img_array)
+        # Create the final dask array that goes into the dictionary
+        t_stacks = []
+        for timepoint_name in timepoint_names:
+            c_stacks = []
+
+            for channel_name in channel_names:
+                channel_group = resolution_group[timepoint_name][channel_name]
+                c_stack = channel_group["Data"]
+
+                z_size = get_attr_int(channel_group, "ImageSizeZ")
+                y_size = get_attr_int(channel_group, "ImageSizeY")
+                x_size = get_attr_int(channel_group, "ImageSizeX")
+
+                c_stack = dask.array.from_array(c_stack, c_stack.chunks)[:z_size, :y_size, :x_size]
+
+                # Create the CZYX dataset
+                c_stacks.append(c_stack)
+
+            # Create the TCZYX dataset
+            t_stack = dask.array.stack(c_stacks, axis=0)
+            t_stacks.append(t_stack)
+
+        # Create the final dataset
+        img_array = dask.array.stack(t_stacks, axis=0)
+
+        # Get the dataset metadata
+        voxel_size_metadata, time_metadata = get_ims_metadata(ims_file, img_array)
 
         image_series = [{
             "array": img_array,
             "axes": "TCZYX",
             "voxel_size_metadata": voxel_size_metadata,
             "time_metadata": time_metadata,
-            "file_close_function": ims_store.ims.close
+            "file_close_function": ims_file.close
         }]
 
-        return image_series
-    
+        return image_series    
 
     #--------------------------------------------------------------------------
 
@@ -660,6 +725,10 @@ class writing_functions:
 
         target_axes = "TCZYX"
 
+        # If there is already a match do not change anything
+        if img_axes == target_axes:
+            return img_array, target_axes
+
         # Add any missing dimensions in their final target positions
         for dim in target_axes:
             if dim not in img_axes:
@@ -722,13 +791,14 @@ class writing_functions:
                     "y": "micrometer",
                     "x": "micrometer",
                 },
-                name=series_output_path.stem)
+                name="image")
 
             # Create the multiscales for pyramids
             multiscales = nz.to_multiscales(
                 ngff_image,
                 scale_factors=[2, 4],
-                method=nz.Methods.DASK_IMAGE_NEAREST)
+                method=nz.Methods.DASK_IMAGE_NEAREST,
+                cache=False,)
             
             # Write the OME-Zarr file
             nz.to_ngff_zarr(

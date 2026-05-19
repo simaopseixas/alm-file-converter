@@ -298,7 +298,7 @@ class ConverterWidget(QWidget):
 
             QLabel {{
                 color: white;
-                font-size: 13px;
+                font-size: 10pt;
             }}
 
             QLabel#infoLabel {{
@@ -306,7 +306,7 @@ class ConverterWidget(QWidget):
                 color: #B7DDF2;
                 border: 1px solid #B7DDF2;
                 border-radius: 8px;
-                font-size: 11px;
+                font-size: 8pt;
                 font-weight: bold;
             }}
 
@@ -317,14 +317,14 @@ class ConverterWidget(QWidget):
 
             QLabel#authorLabel {{
                 color: #9A9A9A;
-                font-size: 9px;
+                font-size: 7pt;
             }}
 
 
             QCheckBox {{
                 spacing: 5px;
                 color: white;
-                font-size: 12px;
+                font-size: 9pt;
             }}
 
             QCheckBox::indicator {{
@@ -363,7 +363,7 @@ class ConverterWidget(QWidget):
                 border: 1px solid #444444;
                 border-radius: 6px;
                 padding: 3px 8px;
-                font-size: 12px;
+                font-size: 9pt;
             }}
 
             QComboBox QAbstractItemView {{
@@ -392,7 +392,7 @@ class ConverterWidget(QWidget):
                 border: 2px solid #555;
                 border-radius: 8px;
                 padding: 0px 14px;
-                font-size: 13px;
+                font-size: 10pt;
             }}
 
             QPushButton:hover {{

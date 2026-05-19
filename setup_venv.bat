@@ -12,10 +12,10 @@ if %ERRORLEVEL% neq 0 (
 
 echo.
 echo =====================================
-echo Creating Python 3.10 environment
+echo Creating Python 3.12 environment
 echo =====================================
 
-uv venv --python 3.10
+uv venv --python 3.12
 
 echo.
 echo =====================================
