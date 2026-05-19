@@ -13,13 +13,6 @@
         .ims (I WILL NEED A TIME FRAME FILE)
 
 - Preserve positional metadata when available
-    Remaining:
-    - ims
-    - tifs
-    - lif
-    - zarrs
-    - zvi
-    - nd2
 
 ### Future
 
