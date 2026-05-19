@@ -160,7 +160,7 @@ class ConverterWidget(QWidget):
             self.batch_info_label,
             "This program has reading support for:\n" \
             ".tif, .tiff, .ome.tif, .ome.tiff,\n" \
-            ".zarr, .ome.zarr, .ims, .lif, .nd2, .zvi.\n" \
+            ".ome.zarr, .ims, .lif, .nd2, .zvi.\n" \
             "\n" \
             "To access this project's github for more\n" \
             "information, click this button."
