@@ -14,6 +14,15 @@
 
 - Preserve positional metadata when available
 
+- Preserve positional metadata when available
+    Remaining:
+    - ims
+    - tifs
+    - lif
+    - zarrs
+    - zvi
+    - nd2
+    
 ### Future
 
 - ? maybe add the available pyramids of .ims datasets to the reading and writing protocols
