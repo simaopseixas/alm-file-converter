@@ -11,6 +11,7 @@ dist/
 
 # Test datasets
 files_for_conversion/
+teste_conversion/
 
 # Image file creation
 /src/attributes/conversion_image/

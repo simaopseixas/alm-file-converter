@@ -14,8 +14,6 @@ import imaris_ims_file_reader
 import tifffile
 import dask.array
 import dask
-from multiview_stitcher import spatial_image_utils as si_utils
-from multiview_stitcher import ngff_utils
 import numpy as np
 
 from readlif.reader import LifFile
