@@ -38,9 +38,9 @@ A standalone executable is available on the latest Release.
 
 - Converts single microscopy files or multiple files from a folder in a batch conversion.
 - Supports lazy reading to handle large datasets (excluding only `.zvi`).
-- Supports multi-position reading in the `.lif` and `.nd2` file formats, given the positions have the same `TCZYX` dimensions.
-- Preserves voxel size metadata when available.
-- Generates timestamped error reports for failed conversions detailing each failed file and its error traceback information.
+- Supports multi-position reading in the `.lif`, `.nd2`, `.ome.tif` and `.ome.tiff` file formats.
+- Preserves voxel size and time-step metadata when available.
+
 
 ### Multi-Position Data
 
@@ -56,13 +56,14 @@ For multi-position outputs:
 - The **Batch Processing** check-box and the file format choice box save their state for the next time the program is opened.
 - Information about the conversion is displayed in a console window that opens with the program.
 - If any error occurs during a batch conversion, the program will skip to the next file. The error will then be saved in the generated report
+- Generates timestamped error reports for failed conversions detailing each failed file and its error traceback information.
 
 
 ## Running the code
 
 You will need a Python installation.
 
-This project uses Python 3.10.
+This project was built on Python 3.12.
 
 **Windows:**
 

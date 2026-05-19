@@ -170,9 +170,63 @@ class file_reading_functions:
                     if fps != 0:
                         time_metadata["t"] = 1 / fps
 
-            return voxel_size_metadata, time_metadata
+            #--------------------------------------------------------------------
+            # Positional Metadata
 
-        
+            # Start the dictionary
+            position_metadata = {
+                "x": None,
+                "y": None,
+                "z": None,
+                "unit": "micrometer",
+            }
+
+            # Get OME time metadata
+            if pixels is not None:
+
+                # Get the available metadata of all 2D YX planes
+                plane_metadata = pixels.get("Plane")
+
+                plane_positions = []
+
+                # Normalize the data into a list
+                if plane_metadata is not None:
+                    if not isinstance(plane_metadata, list):
+                        plane_metadata = [plane_metadata]
+
+                    # Get the position of each available YX plane
+                    for plane in plane_metadata:
+                        plane_position = {
+                            "x": float(plane["PositionX"]) if plane.get("PositionX") is not None else None,
+                            "y": float(plane["PositionY"]) if plane.get("PositionY") is not None else None,
+                            "z": float(plane["PositionZ"]) if plane.get("PositionZ") is not None else None,
+                            "unit": "micrometer",
+                        }
+                        plane_positions.append(plane_position)
+
+                # Store the main value and all the other values on the position_metadata dictionary
+                if plane_positions:
+                    position_metadata["x"] = plane_positions[0]["x"]
+                    position_metadata["y"] = plane_positions[0]["y"]
+                    position_metadata["z"] = plane_positions[0]["z"]
+                    position_metadata["plane_positions"] = plane_positions
+
+            # If there is no OME metadata
+            else:
+                # Get any available ImageJ metadata, if there is any
+                imagej_metadata = tif.imagej_metadata or {}
+
+                # Get the position metadata
+                if imagej_metadata.get("xorigin") is not None and voxel_size_metadata["x"] is not None:
+                    position_metadata["x"] = -float(imagej_metadata["xorigin"]) * voxel_size_metadata["x"]
+
+                if imagej_metadata.get("yorigin") is not None and voxel_size_metadata["y"] is not None:
+                    position_metadata["y"] = -float(imagej_metadata["yorigin"]) * voxel_size_metadata["y"]
+
+                if imagej_metadata.get("zorigin") is not None and voxel_size_metadata["z"] is not None:
+                    position_metadata["z"] = -float(imagej_metadata["zorigin"]) * voxel_size_metadata["z"]
+
+            return voxel_size_metadata, time_metadata, position_metadata
     
         def read_tif_series_as_dask(file_path, seriex_index, tif_series):
             """
@@ -206,14 +260,15 @@ class file_reading_functions:
                 img_array, img_axes = read_tif_series_as_dask(file_path, series_index, tif_series)
 
                 # Get the metadata of the series
-                voxel_size_metadata, time_metadata = get_tif_metadata(tif, tif_series, series_index)
+                voxel_size_metadata, time_metadata, position_metadata = get_tif_metadata(tif, tif_series, series_index)
 
                 # Append the information onto the dictionary
                 image_series.append({
                     "array": img_array,
                     "axes": img_axes,
                     "voxel_size_metadata": voxel_size_metadata,
-                    "time_metadata": time_metadata
+                    "time_metadata": time_metadata,
+                    "position_metadata": position_metadata
                 })
 
         if not image_series:
@@ -320,6 +375,9 @@ class file_reading_functions:
             Helper function that gets the voxel size and the time frame metadata
             """
 
+            #-----------------------------------------------------------------------------
+            # Voxel size
+
             # Get the image available metadata
             image_info = ims_file["DataSetInfo"]["Image"]
 
@@ -338,10 +396,43 @@ class file_reading_functions:
                 "x": x_extent / X if X > 1 else None,
             }
 
+            #-----------------------------------------------------------------------------
+            # Time frame
+
             # Fill the time data as None
             time_metadata = {"t": None}
 
-            return voxel_size_metadata, time_metadata
+            #-----------------------------------------------------------------------------
+            # Positional metadata
+
+            # Get the images minimum and maximum extent
+            ext_min_x = get_attr_float(image_info, "ExtMin0")
+            ext_min_y = get_attr_float(image_info, "ExtMin1")
+            ext_min_z = get_attr_float(image_info, "ExtMin2")
+
+            ext_max_x = get_attr_float(image_info, "ExtMax0")
+            ext_max_y = get_attr_float(image_info, "ExtMax1")
+            ext_max_z = get_attr_float(image_info, "ExtMax2")
+
+            # Retrieve extent information into a dictionary
+            position_metadata = {
+                "x": ext_min_x,
+                "y": ext_min_y,
+                "z": ext_min_z,
+                "unit": "micrometer",
+                "extent_min": {
+                    "x": ext_min_x,
+                    "y": ext_min_y,
+                    "z": ext_min_z,
+                },
+                "extent_max": {
+                    "x": ext_max_x,
+                    "y": ext_max_y,
+                    "z": ext_max_z,
+                },
+            }
+
+            return voxel_size_metadata, time_metadata, position_metadata
         
         # Read the ims
         ims_file = h5py.File(file_path, "r")
@@ -387,13 +478,14 @@ class file_reading_functions:
         img_array = dask.array.stack(t_stacks, axis=0)
 
         # Get the dataset metadata
-        voxel_size_metadata, time_metadata = get_ims_metadata(ims_file, img_array)
+        voxel_size_metadata, time_metadata, position_metadata = get_ims_metadata(ims_file, img_array)
 
         image_series = [{
             "array": img_array,
             "axes": "TCZYX",
             "voxel_size_metadata": voxel_size_metadata,
             "time_metadata": time_metadata,
+            "position_metadata": position_metadata,
             "file_close_function": ims_file.close
         }]
 
@@ -830,9 +922,7 @@ class writing_functions:
 
             # Write a file for each of the available series
             for series_index, series in enumerate(image_series, start=1):
-                series_output_path = series_folder / (
-                    f"{output_path.name.removesuffix('.ome.zarr')}_series_{series_index}.ome.zarr"
-                )
+                series_output_path = series_folder / (f"series_{series_index}.ome.zarr" )
 
                 write_single_ome_zarr(series_output_path, series)
 
@@ -1039,8 +1129,6 @@ class writing_functions:
 
             # Write a file for each of the available series
             for series_index, series in enumerate(image_series, start=1):
-                series_output_path = series_folder / (
-                    f"{output_path.stem}_series_{series_index}{output_path.suffix}"
-                )
+                series_output_path = series_folder / (f"series_{series_index}{output_path.suffix}")
 
                 write_single_tiff(series_output_path, series)
