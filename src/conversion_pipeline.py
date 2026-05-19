@@ -34,9 +34,9 @@ class file_conversion:
         """
 
         print()
-        print("-----------------------------------------------------------------------------------------------")
+        print("-------------------------------------------------------------------------------------------------------------------------------------")
         print("Batch Conversion:")
-        print("-----------------------------------------------------------------------------------------------")
+        print("-------------------------------------------------------------------------------------------------------------------------------------")
 
         # If the folder was not yet chosen, let the user choose it
         if input_file_paths is None or n_files is None or input_folder is None:
@@ -164,13 +164,13 @@ class file_conversion:
         print("Conversion finished.")
         if failed_files == 0:
             print("All files were successfully converted.")
-            print("-----------------------------------------------------------------------------------------------")
+            print("-------------------------------------------------------------------------------------------------------------------------------------")
         else:
-            print("-----------------------------------------------------------------------------------------------")
+            print("-------------------------------------------------------------------------------------------------------------------------------------")
             print(f"Successful Files: {successful_files}/{n_files}")
             print(f"Failed Files: {failed_files}/{n_files}")
             print("Some files failed to convert. Check the conversion report for details.")
-            print("-----------------------------------------------------------------------------------------------")
+            print("-------------------------------------------------------------------------------------------------------------------------------------")
 
     #------------------------------------------
     # Single-File Conversion
@@ -193,7 +193,7 @@ class file_conversion:
         file_size = file_conversion.get_disk_space(input_file_path)
         
         print()
-        print("-----------------------------------------------------------------------------------------------")
+        print("-------------------------------------------------------------------------------------------------------------------------------------")
         print(f"Converting File: {input_file_path.name} to {output_file_format} ({file_size})")
 
         conversion_failed = False
@@ -264,7 +264,7 @@ class file_conversion:
                 error_message,
                 error_traceback,
             )
-            print("-----------------------------------------------------------------------------------------------")
+            print("-------------------------------------------------------------------------------------------------------------------------------------")
 
         else:
             # Different prints for different cases
@@ -280,7 +280,7 @@ class file_conversion:
 
             else:
                 print(f"Saved File: {output_file.name}")
-            print("-----------------------------------------------------------------------------------------------")
+            print("-------------------------------------------------------------------------------------------------------------------------------------")
             
 
 
@@ -302,7 +302,7 @@ class file_conversion:
         file_size = file_conversion.get_disk_space(input_file_path)
         
         print()
-        print("-----------------------------------------------------------------------------------------------")
+        print("-------------------------------------------------------------------------------------------------------------------------------------")
         print(f"Converting File: {input_file_path.name} to {output_file_format} ({file_size})")
 
         conversion_failed = False
@@ -373,7 +373,7 @@ class file_conversion:
                 error_message,
                 error_traceback,
             )
-            print("-----------------------------------------------------------------------------------------------")
+            print("-------------------------------------------------------------------------------------------------------------------------------------")
 
         else:
             # Different prints for different cases
@@ -389,7 +389,7 @@ class file_conversion:
 
             else:
                 print(f"Saved File: {output_file.name}")
-            print("-----------------------------------------------------------------------------------------------")
+            print("-------------------------------------------------------------------------------------------------------------------------------------")
 
 
     ##############################################
@@ -739,38 +739,3 @@ class file_conversion:
             size /= 1024
 
         return f"{size:.2f} {unit}"
-
-# if __name__ == "__main__":
-
-#     input_file_path = Path(
-#         r"C:\Users\simao\Desktop\Repositories\Microscopy_File_Converter\files_for_conversion\lixo\Converted Files\MosaicoIIrregular_Leica.ome.tiff"
-#     )
-
-#     print(file_conversion.get_disk_space(input_file_path))
-
-#     output_file_format = ".ome.tiff"
-
-#     output_folder = file_conversion.create_converted_output_folder(
-#         input_file_path.parent
-#     )
-
-#     output_file = file_conversion.create_output_file_path(
-#         output_folder,
-#         input_file_path,
-#         output_file_format,
-#     )
-
-#     image_series = file_reading_functions.read_tifs_as_dask(input_file_path)
-
-#     print(image_series)
-
-    # for series in image_series:
-    #     series["array"], series["axes"] = writing_functions.normalize_to_tczyx(
-    #         series["array"],
-    #         series["axes"],
-    #     )
-
-    # writing_functions.write_ome_tiff(
-    #     output_file,
-    #     image_series,
-    # )

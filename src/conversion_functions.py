@@ -28,6 +28,8 @@ import os
 from bioio import BioImage
 import bioio_bioformats
 
+import ngff_zarr as nz
+
 #################################################################
 # File Reading Functions
 
@@ -223,48 +225,50 @@ class file_reading_functions:
 
     #--------------------------------------------------------------------------
 
-
     def read_zarrs_as_dask(file_path):
         """
         Opens a .zarr or an .ome.zarr as a zarr array in reading.
         Then converts it to a dask array and appends it to a dictionary with the image series
         """
 
-        def get_omezarr_metadata(sim):
+        def get_zarr_metadata(ngff_image):
             """
             Helper function that gets the voxel size and the time frame metadata
             """
+            
+            # Get the scale dictionary from the data
+            scale = ngff_image.scale or {}
 
-            # Get the voxel size data
-            spacing = si_utils.get_spacing_from_sim(sim)
-
-            # Get the voxel size metadata if available
+            # Get the voxel size
             voxel_size_metadata = {
-                "z": spacing.get("z", None),
-                "y": spacing.get("y", None),
-                "x": spacing.get("x", None),
+                "z": scale.get("z", None),
+                "y": scale.get("y", None),
+                "x": scale.get("x", None),
             }
 
-            # Get the time frame metadata
-            time_metadata = {"t": spacing.get("t", None)}
+            # Get the time frame
+            time_metadata = {"t": scale.get("t", None)}
 
             return voxel_size_metadata, time_metadata
+        
+        # Access the dask image
+        multiscales = nz.from_ngff_zarr(str(file_path))
 
-        # Access the ome.zarr in reading mode
-        sim = ngff_utils.read_sim_from_ome_zarr(file_path, resolution_level=0)
-        img_array = sim.data
+        # Access the full resolution image
+        image = multiscales.images[0]
 
-        # Get the available axes of the data
-        img_axes = "".join(sim.dims).upper()
+        # Convert the dask array
+        img_array = image.data
+        img_axes = "".join(image.dims).upper()
 
-        # Raise an error if the ZARR has more than 5 dimensions
+        # Raises an error if it has more than 5D
         if img_array.ndim > 5:
             raise ValueError(
                 f"OME-Zarr data must be 2D to 5D. Got {img_array.ndim}D with axes {img_axes}."
             )
-
+        
         # Get the metadata
-        voxel_size_metadata, time_metadata = get_omezarr_metadata(sim)
+        voxel_size_metadata, time_metadata = get_zarr_metadata(image)
 
         image_series = [{
             "array": img_array,
@@ -672,7 +676,7 @@ class writing_functions:
         return img_array, target_axes
 
     #--------------------------------------------------------------------------
-    
+
     def write_ome_zarr(output_path, image_series):
         """
         Function that takes a list of dictionaries with image series data as an input
@@ -684,7 +688,7 @@ class writing_functions:
             Helper function that returns the voxel size and time metadata for the OME-ZARR writing
             """
 
-            # Compute the dictionary
+            # Compute the scales dictionary
             scale = {
                 "t": time_metadata["t"] if time_metadata["t"] is not None else 1,
                 "z": voxel_size_metadata["z"] if voxel_size_metadata["z"] is not None else 1,
@@ -709,32 +713,32 @@ class writing_functions:
             if img_axes != "TCZYX":
                 raise ValueError(f"The series must be TCZYX before writing. Got {img_axes}")
             
-            # Get the shape of the data
-            T, C, Z, Y, X = img_array.shape
-
-            # Get the metadata
-            scale = get_scale(voxel_size_metadata, time_metadata)
-
-            # Create the sim object
-            sim = si_utils.get_sim_from_array(
+            # Create an ngff image
+            ngff_image = nz.to_ngff_image(
                 img_array,
-                dims = ["t", "c", "z", "y", "x"],
-                scale = scale,
-                translation = {
-                    "z": 0,
-                    "y": 0,
-                    "x": 0},
-                transform_key="stage_metadata",
-                c_coords=[f"channel_{i}" for i in range(C)],
-                t_coords=list(range(T)),
-            )
+                dims=["t", "c", "z", "y", "x"],
+                scale=get_scale(voxel_size_metadata, time_metadata),
+                axes_units={
+                    "t": "second",
+                    "z": "micrometer",
+                    "y": "micrometer",
+                    "x": "micrometer",
+                },
+                name=series_output_path.stem)
 
-            # Write the OME-Zarr
-            ngff_utils.write_sim_to_ome_zarr(
-                sim,
-                output_zarr_url=str(series_output_path),
+            # Create the multiscales for pyramids
+            multiscales = nz.to_multiscales(
+                ngff_image,
+                scale_factors=[2, 4],
+                method=nz.Methods.DASK_IMAGE_NEAREST)
+            
+            # Write the OME-Zarr file
+            nz.to_ngff_zarr(
+                str(series_output_path),
+                multiscales,
+                version="0.4",
                 overwrite=True,
-                ngff_version="0.4",
+                compressor=None,
             )
 
         # Get the output path
@@ -749,12 +753,11 @@ class writing_functions:
         else:
 
             # Create the folder in which the series will be saved
-            output_format_name = ".ome.zarr".replace(".", "")
+            output_format_name = ".ome.zarr".replace(".", "").upper()
 
             series_folder = output_path.with_name(
-                f"{output_path.name.removesuffix('.ome.zarr')}_{output_format_name}"
-            )
-
+                f"{output_path.name.removesuffix('.ome.zarr')}_{output_format_name}")
+            
             series_folder.mkdir(parents=True, exist_ok=True)
 
             # Write a file for each of the available series
@@ -958,7 +961,7 @@ class writing_functions:
         # If there is more than one series in the list
         else:
             # Create the folder in which the positions will be saved in
-            output_format_name = output_path.suffix.replace(".", "")
+            output_format_name = output_path.suffix.replace(".", "").upper()
 
             series_folder = output_path.with_name(
                 f"{output_path.name.removesuffix(output_path.suffix)}_{output_format_name}"
@@ -973,16 +976,3 @@ class writing_functions:
                 )
 
                 write_single_tiff(series_output_path, series)
-
-
-    #--------------------------------------------------------------------------
-
-# if __name__ == "__main__":
-
-#     file = r"C:\Users\simao\Desktop\Repositories\Microscopy_File_Converter\files_for_conversion\lixo\MosaicoIIrregular_Leica.lif"
-    
-# #     file = 
-    
-#     image_series = file_reading_functions.read_lif_as_dask(file)
-
-#     print(image_series)

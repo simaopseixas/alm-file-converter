@@ -1,7 +1,5 @@
 # TO-DO
 
-- Add the available pyramids of .ims datasets to the reading and writing protocols
-
 - Validate the time-frame metadata in all file formats:
     Remaining:
     - lif
@@ -19,6 +17,7 @@
 
 ### Future
 
+- Add the available pyramids of .ims datasets to the reading and writing protocols
 - Maybe change the omezarr writing protocol, since the multiview-stitcher sim is taking some time
 - Add significant bit-depth metadata (important for the case of 12 bit data)
 - Add 6D support for ZARR reading?
