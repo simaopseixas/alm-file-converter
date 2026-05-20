@@ -85,6 +85,8 @@ python src/main.py
 
 ### Building the Executable
 
+The `.spec` files are only available for Windows.
+
 To build the standalone executable, run:
 ```
 .\.venv\Scripts\pyinstaller.exe --noconfirm --clean "standalone-executable.spec"
