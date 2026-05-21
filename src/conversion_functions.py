@@ -500,6 +500,170 @@ class file_reading_functions:
         with the series dask array, axes and voxel size data.
         """
 
+        def get_lif_metadata(lif, img, m):
+            """
+            Helper function that gets the voxel size, time frame and positional metadata of a single series from a Leica .lif
+            """
+
+            #---------------------------------------------------------------------------
+            # Voxel size
+
+            # Get the voxel size metadata
+            x_scale, y_scale, z_scale, t_scale = img.info["scale"]
+            voxel_size_metadata = {
+                "z": 1 / z_scale if z_scale else None,
+                "y": 1 / y_scale if y_scale else None,
+                "x": 1 / x_scale if x_scale else None,
+            }
+
+            #---------------------------------------------------------------------------
+            # Time frame
+
+            time_metadata = {"t": 1 / t_scale if t_scale else None} # in seconds
+
+            #---------------------------------------------------------------------------
+            # Position metadata
+
+            position_metadata = {
+                "x": None,
+                "y": None,
+                "z": None,
+                "unit": "micrometer",
+                "extent_min": {
+                    "x": None,
+                    "y": None,
+                    "z": None,
+                },
+                "extent_max": {
+                    "x": None,
+                    "y": None,
+                    "z": None,
+                },
+            }
+
+            # Initialize the necessary objects
+            tile_positions = []
+            stage_position = None
+            extent_size = {
+                "x": None,
+                "y": None,
+                "z": None,
+            }
+
+            # Scan the XML file
+            for element in lif.xml_root.iter():
+
+                # Skip anything that is not identified as an "Element"
+                if not element.tag.endswith("Element"):
+                    continue
+
+                # Check if said Element corresponds to the lif image series we want
+                if element.attrib.get("Name") != img.info["name"]:
+                    continue
+
+                #
+                for metadata_element in element.iter():
+
+                    # If the series is a mosaic / tile position
+                    if metadata_element.tag.endswith("Tile"):
+                        tile_positions.append({
+                            "y": float(metadata_element.attrib["PosY"]) * 1e6 if metadata_element.attrib.get("PosY") is not None else None,
+                            "z": float(metadata_element.attrib["PosZ"]) * 1e6 if metadata_element.attrib.get("PosZ") is not None else None,
+                            "x": float(metadata_element.attrib["PosX"]) * 1e6 if metadata_element.attrib.get("PosX") is not None else None,
+                            "field_x": int(metadata_element.attrib["FieldX"]) if metadata_element.attrib.get("FieldX") is not None else None,
+                            "field_y": int(metadata_element.attrib["FieldY"]) if metadata_element.attrib.get("FieldY") is not None else None,
+                        })
+
+                    # If the series is a simple single-series
+                    elif metadata_element.tag.endswith("ATLCameraSettingDefinition"):
+                        stage_position = {
+                            "x": float(metadata_element.attrib["StagePosX"]) * 1e6 if metadata_element.attrib.get("StagePosX") is not None else None,
+                            "y": float(metadata_element.attrib["StagePosY"]) * 1e6 if metadata_element.attrib.get("StagePosY") is not None else None,
+                            "z": float(metadata_element.attrib["ZPosition"]) * 1e6 if metadata_element.attrib.get("ZPosition") is not None else None,
+                        }
+
+                    # Also get the Estent metadata for each of the previous options
+                    elif metadata_element.tag.endswith("DimensionDescription"):
+
+                        dim_id = metadata_element.attrib.get("DimID")
+                        length = metadata_element.attrib.get("Length")
+                        unit = metadata_element.attrib.get("Unit")
+
+                        if length is None:
+                            continue
+
+                        unit_to_micrometer = {
+                            "m": 1000000,
+                            "meter": 1000000,
+                            "meters": 1000000,
+                            "mm": 1000,
+                            "millimeter": 1000,
+                            "millimeters": 1000,
+                            "um": 1,
+                            "µm": 1,
+                            "micrometer": 1,
+                            "micrometers": 1,
+                            "nm": 0.001,
+                            "nanometer": 0.001,
+                            "nanometers": 0.001,
+                        }
+
+                        length = float(length)
+
+                        unit = (metadata_element.attrib.get("Unit") or "").lower()
+                        unit_factor = unit_to_micrometer.get(unit)
+
+                        if unit_factor is not None:
+                            length *= unit_factor
+                        else:
+                            length = None
+
+                        if dim_id == "1":
+                            extent_size["x"] = length
+
+                        if dim_id == "2":
+                            extent_size["y"] = length
+
+                        if dim_id == "3":
+                            extent_size["z"] = length
+
+                break
+
+            # If there are several tile positions, get the correct tile
+            if m < len(tile_positions):
+                tile_position = tile_positions[m]
+
+                # Append the metadata
+                position_metadata["x"] = tile_position["x"]
+                position_metadata["y"] = tile_position["y"]
+                position_metadata["z"] = tile_position["z"]
+                position_metadata["field_x"] = tile_position["field_x"]
+                position_metadata["field_y"] = tile_position["field_y"]
+
+            # If its a simple-series
+            elif stage_position is not None:
+                position_metadata["x"] = stage_position["x"]
+                position_metadata["y"] = stage_position["y"]
+                position_metadata["z"] = stage_position["z"]
+
+            # Append the min. extent metadata
+            position_metadata["extent_min"] = {
+                "x": position_metadata["x"],
+                "y": position_metadata["y"],
+                "z": position_metadata["z"],
+            }
+
+            # Append the max. extent metadata
+            for axis in ["x", "y", "z"]:
+                if position_metadata[axis] is not None and extent_size[axis] is not None:
+                    position_metadata["extent_max"][axis] = position_metadata[axis] + extent_size[axis]
+                else:
+                    position_metadata["extent_max"][axis] = None
+
+
+            return voxel_size_metadata, time_metadata, position_metadata
+        
+
         def read_lif_zstack(file_path, image_index, t, c, m, Z):
             """
             Helper function to access the .lif data to build the dask array
@@ -567,19 +731,11 @@ class file_reading_functions:
             # Get the available mosaics
             M = dims.m
 
-            # Get the voxel size metadata
-            x_scale, y_scale, z_scale, t_scale = img.info["scale"]
-            voxel_size_metadata = {
-                "z": 1 / z_scale if z_scale else None,
-                "y": 1 / y_scale if y_scale else None,
-                "x": 1 / x_scale if x_scale else None,
-            }
-
-            # Get time metadata
-            time_metadata = {"t": 1 / t_scale if t_scale else None} # in seconds
-
             # For each mosaic inside the "series"
             for m in range(M):
+
+                # Get the metadata
+                voxel_size_metadata, time_metadata, position_metadata = get_lif_metadata(lif, img, m)
 
                 # Compute the TCZYX dask array
                 image_array = build_tczyx_array(file_path, image_index, img, m)
@@ -590,6 +746,7 @@ class file_reading_functions:
                     "axes": "TCZYX",
                     "voxel_size_metadata": voxel_size_metadata,
                     "time_metadata": time_metadata,
+                    "position_metadata": position_metadata,
                 })
 
         return image_series
