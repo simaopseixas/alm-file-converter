@@ -1092,7 +1092,7 @@ class writing_functions:
         Function that takes a list of dask arrays as an input and writes its data into an .ome.tif or .ome.tiff file
         """
 
-        def get_ome_metadata(voxel_size_metadata, time_metadata):
+        def get_ome_metadata(voxel_size_metadata, time_metadata, position_metadata, T, C, Z):
             """
             Helper function that computes an OME voxel size dictionary for metadata
             """
@@ -1100,6 +1100,8 @@ class writing_functions:
             # Create the OME metadata dictionary
             ome_metadata = { "axes": "TCZYX"}
 
+            #----------------------------------------------------------------
+            # Voxel size
             if voxel_size_metadata["x"] is not None:
                 ome_metadata["PhysicalSizeX"] = voxel_size_metadata["x"]
 
@@ -1109,9 +1111,66 @@ class writing_functions:
             if voxel_size_metadata["z"] is not None:
                 ome_metadata["PhysicalSizeZ"] = voxel_size_metadata["z"]
 
+            #----------------------------------------------------------------
+            # Time metadata
+
             if time_metadata["t"] is not None:
                 ome_metadata["TimeIncrement"] = time_metadata["t"]
                 ome_metadata["TimeIncrementUnit"] = "s"
+
+            #----------------------------------------------------------------
+            # Position metadata
+
+            plane_metadata = []
+
+            # Get the X, Y, Z min. extents
+            extent_min = position_metadata.get("extent_min", {})
+            # Get the X, Y, Z max. extents
+            extent_max = position_metadata.get("extent_max", {})
+
+            position_x = position_metadata["x"]
+            position_y = position_metadata["y"]
+            z_min = extent_min["z"]
+            z_max = extent_max["z"]
+            z_step = voxel_size_metadata["z"]
+
+            # Calculate the zstep if was not read
+            if z_step is None:
+                if z_min is not None and z_max is not None and Z > 1:
+                    z_step = (z_max - z_min) / (Z - 1)
+
+            # Write the positions of each plane
+            for t in range(T):
+                for c in range(C):
+                    for z in range(Z):
+
+                        plane = {}
+
+                        if position_x is not None:
+                            plane["PositionX"] = position_x
+                            plane["PositionXUnit"] = "µm"
+
+                        if position_y is not None:
+                            plane["PositionY"] = position_y
+                            plane["PositionYUnit"] = "µm"
+
+                        if z_min is not None and z_step is not None:
+                            plane["PositionZ"] = z_min + z * z_step
+                            plane["PositionZUnit"] = "µm"
+
+                        elif position_metadata.get("z") is not None:
+                            plane["PositionZ"] = position_metadata["z"]
+                            plane["PositionZUnit"] = "µm"
+
+                        plane_metadata.append(plane)
+
+            # Append the plane metadata to the total metadata
+            if plane_metadata:
+                ome_metadata["Plane"] = plane_metadata
+
+            # Calculate the planes
+            if position_metadata["z"] is not None and z_step is not None:
+                plane["PositionZ"] = position_metadata["z"] + z * z_step
 
             return ome_metadata
 
@@ -1150,7 +1209,7 @@ class writing_functions:
                 T, C, Z, Y, X = img_array.shape
 
                 # Get the OME formatted metadata of the series
-                ome_metadata = get_ome_metadata(voxel_size_metadata, time_metadata)
+                ome_metadata = get_ome_metadata(voxel_size_metadata, time_metadata, position_metadata, T, C, Z)
 
                 # Write this series into the OME-TIF file
                 ome_tif.write(

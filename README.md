@@ -20,9 +20,9 @@ A standalone executable is available on the latest Release.
 
 `.ome.tif`, `.ome.tiff`, `.ome.zarr`, `.tif`, `.tiff`.
 
-<!-- <p align="center">
+<p align="center">
 <img src="src/attributes/conversion.png" alt="Image Conversion" width="100%">
-</p> -->
+</p>
 
 ## How to use
 
