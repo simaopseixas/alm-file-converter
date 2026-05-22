@@ -1,5 +1,7 @@
 # TO-DO
 
+- Add .ics format support
+
 - Validate the time-frame metadata in all file formats:
     Remaining:
     - lif
