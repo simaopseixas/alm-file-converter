@@ -26,14 +26,73 @@ This class manages the main GUI of the software
 
 class ConverterWidget(QWidget):
 
-    #--------------------------------------------------
-    # Initialization
-    def __init__(self, parent=None):
+
+    def __init__(self, logger=None, parent=None):
+        """
+        Function that stars the GUI on initialization
+        """
+
         super().__init__(parent)
+
+        # logger object
+        self.logger = logger
+        # synchronization flag
+        self.syncing_window_state = False
+
         self.attributes_dir = Path(__file__).resolve().parent / "attributes"
         self.tooltip_manager = CustomToolTipManager(self)
         self.settings = QSettings("i3S", "ALM File Converter")
         self.setup_ui()
+
+    def closeEvent(self, event):
+        """
+        Function that handles the closing of the program
+        """
+
+        # Close the logger as well
+        if self.logger is not None:
+            self.logger.close_from_main_window()
+
+        event.accept()
+
+    def changeEvent(self, event):
+        """
+        Function that keeps the logger tied to the main window.
+        When the main window is minimized or brought to display, it also happens to the logger.
+        """
+
+        super().changeEvent(event)
+
+        # If there is no logger do nothing
+        if self.logger is None:
+            return
+        
+        # Only react to window minimize / restore state changes
+        if event.type() != QEvent.Type.WindowStateChange:
+            return
+        
+        # Ignore state changes caused by the other window synchronizing
+        if self.syncing_window_state:
+            return
+        
+        # Mark both windows as syncing to avoid recursive minimize / restore events
+        self.syncing_window_state = True
+        self.logger.syncing_window_state = True
+
+        try:
+            # Minimize the main window together with the logger
+            if self.isMinimized():
+                self.logger.showMinimized()
+
+            # Restore the main window when the logger is restored
+            else:
+                self.logger.showNormal()
+                self.logger.raise_()
+
+        # Always clear the sync flags
+        finally:
+            self.syncing_window_state = False
+            self.logger.syncing_window_state = False
 
     #--------------------------------------------------
     # Algorithm Functions
@@ -47,7 +106,7 @@ class ConverterWidget(QWidget):
         output_file_format = self.format_combobox.currentText()
 
         # Let the user choose the file
-        input_file_path = file_conversion.file_choice()
+        input_file_path = file_conversion.file_choice(logger=self.logger)
 
         if input_file_path is None:
             return
@@ -58,7 +117,7 @@ class ConverterWidget(QWidget):
 
         # Initialize the single-file conversion algorithm
         try:
-            file_conversion.single_file_conversion(output_file_format, input_file_path)
+            file_conversion.single_file_conversion(output_file_format, input_file_path, logger=self.logger)
         finally:
             self.restore_window()
 
@@ -72,7 +131,7 @@ class ConverterWidget(QWidget):
         output_file_format = self.format_combobox.currentText()
 
         # Let the user choose the file
-        input_file_path = file_conversion.zarr_choice()
+        input_file_path = file_conversion.zarr_choice(logger=self.logger)
 
         if input_file_path is None:
             return
@@ -83,7 +142,7 @@ class ConverterWidget(QWidget):
 
         # Initialize the single-file conversion algorithm
         try:
-            file_conversion.single_omezarr_conversion(output_file_format, input_file_path)
+            file_conversion.single_omezarr_conversion(output_file_format, input_file_path, logger=self.logger)
         finally:
             self.restore_window()
 
@@ -97,7 +156,7 @@ class ConverterWidget(QWidget):
         output_file_format = self.format_combobox.currentText()
 
         # Let the user choose the folder
-        input_file_paths, n_files, input_folder = file_conversion.folder_choice(self)
+        input_file_paths, n_files, input_folder = file_conversion.folder_choice(self, logger=self.logger)
 
         if input_folder is None:
             return
@@ -108,7 +167,7 @@ class ConverterWidget(QWidget):
 
         # Initialize the conversion algorithm
         try:
-            file_conversion.batch_conversion(output_file_format, input_file_paths, n_files, input_folder)
+            file_conversion.batch_conversion(output_file_format, input_file_paths, n_files, input_folder, logger=self.logger)
         finally:
             self.restore_window()
 

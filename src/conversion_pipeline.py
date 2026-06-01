@@ -8,7 +8,7 @@ It does this by doing several steps:
 4. Writing each zarr array on disk with the intended file format.
 """
 
-#################################################################
+###################################################################
 # Imports
 
 from PySide6.QtWidgets import QApplication, QFileDialog
@@ -18,6 +18,16 @@ import traceback
 from datetime import datetime
 import gc
 
+#------------------------------------------------------------------
+# Fallback logger in case I want to use the conversion functions independently without the GUI
+class ConsoleLogger:
+
+    def print(self, *args, sep=" ", end="\n", flush=False):
+        print(*args, sep=sep, end=end, flush=flush)
+
+
+###################################################################
+# Conversion Algorithms
 
 class file_conversion:
 
@@ -27,28 +37,31 @@ class file_conversion:
     #------------------------------------------
     # Batch Conversion
 
-    def batch_conversion(output_file_format, input_file_paths=None, n_files=None, input_folder=None):
+    def batch_conversion(output_file_format, input_file_paths=None, n_files=None, input_folder=None, logger=None):
         """
         Performs the conversion algorithm for a batched conversion
         From folder choice, reading as a dask array, and writing as the intended format.
         """
 
-        print()
-        print("-------------------------------------------------------------------------------------------------------------------------------------")
-        print("Batch Conversion:")
-        print("-------------------------------------------------------------------------------------------------------------------------------------")
+        # Give the logging
+        logger = logger or ConsoleLogger()
+
+        logger.print()
+        logger.print("-------------------------------------------------------------------------------------------------------------------------------------")
+        logger.print("Batch Conversion:")
+        logger.print("-------------------------------------------------------------------------------------------------------------------------------------")
 
         # If the folder was not yet chosen, let the user choose it
         if input_file_paths is None or n_files is None or input_folder is None:
-            input_file_paths, n_files, input_folder = file_conversion.folder_choice()
+            input_file_paths, n_files, input_folder = file_conversion.folder_choice(logger=logger)
 
         # If no folder was selected, cancel the conversion
         if input_folder is None:
             return
         
-        print()
-        print(f"Selected Folder: {input_folder}")
-        print(f"Found {n_files} Microscopy Files.")
+        logger.print()
+        logger.print(f"Selected Folder: {input_folder}")
+        logger.print(f"Found {n_files} Microscopy Files.")
 
         # Create a "Converted Files" folder that includes the output file format (e.g. "Converted Filed OME ZARR")
         output_format_name = output_file_format.removeprefix(".").replace(".", " ").upper()
@@ -65,8 +78,8 @@ class file_conversion:
             # Get the disk space that the file occupies
             file_size = file_conversion.get_disk_space(input_file_path)
 
-            print()
-            print(f"Converting file {file_index}/{n_files}: {input_file_path.name} to {output_file_format} ({file_size})")
+            logger.print()
+            logger.print(f"Converting file {file_index}/{n_files}: {input_file_path.name} to {output_file_format} ({file_size})")
 
             conversion_failed = False
             error_message = None
@@ -130,9 +143,9 @@ class file_conversion:
                 })
                 failed_files += 1
 
-                print(f"Failed to convert file: {input_file_path.name}")
-                print(f"Error: {error_message}")
-                print("Skipping to next file.")
+                logger.print(f"Failed to convert file: {input_file_path.name}")
+                logger.print(f"Error: {error_message}")
+                logger.print("Skipping to next file.")
 
             else:
                 successful_files += 1
@@ -140,16 +153,16 @@ class file_conversion:
                 # Different prints for different cases
                 if image_series is not None and len(image_series) > 1 and output_file_format in (".tif", ".tiff"):
                     output_format_name = output_file.suffix.replace(".", "")
-                    print(
+                    logger.print(
                         f"Saved files to: "
                         f"{output_file.name.removesuffix(output_file.suffix)}_{output_format_name}"
                     )
 
                 elif image_series is not None and len(image_series) > 1 and output_file_format == ".ome.zarr":
-                    print(f"Saved files to: {output_file.name.removesuffix('.ome.zarr')}_omezarr")
+                    logger.print(f"Saved files to: {output_file.name.removesuffix('.ome.zarr')}_omezarr")
 
                 else:
-                    print(f"Saved File: {output_file.name}")
+                    logger.print(f"Saved File: {output_file.name}")
 
         # Create the final report
         file_conversion.create_report(
@@ -158,32 +171,36 @@ class file_conversion:
             successful_files,
             failed_files,
             failed_files_report,
+            logger=logger,
         )
 
-        print()
-        print("Conversion finished.")
+        logger.print()
+        logger.print("Conversion finished.")
         if failed_files == 0:
-            print("All files were successfully converted.")
-            print("-------------------------------------------------------------------------------------------------------------------------------------")
+            logger.print("All files were successfully converted.")
+            logger.print("-------------------------------------------------------------------------------------------------------------------------------------")
         else:
-            print("-------------------------------------------------------------------------------------------------------------------------------------")
-            print(f"Successful Files: {successful_files}/{n_files}")
-            print(f"Failed Files: {failed_files}/{n_files}")
-            print("Some files failed to convert. Check the conversion report for details.")
-            print("-------------------------------------------------------------------------------------------------------------------------------------")
+            logger.print("-------------------------------------------------------------------------------------------------------------------------------------")
+            logger.print(f"Successful Files: {successful_files}/{n_files}")
+            logger.print(f"Failed Files: {failed_files}/{n_files}")
+            logger.print("Some files failed to convert. Check the conversion report for details.")
+            logger.print("-------------------------------------------------------------------------------------------------------------------------------------")
 
     #------------------------------------------
     # Single-File Conversion
 
-    def single_file_conversion(output_file_format, input_file_path=None):
+    def single_file_conversion(output_file_format, input_file_path=None, logger=None):
         """
         Performs the conversion algorithm for a single file.
         From file choice, reading as a dask array and writing as the intended format.
         """
 
+        # Give the logger
+        logger = logger or ConsoleLogger()
+
         # If the file was not yet chosen, let the user choose it
         if input_file_path is None:
-            input_file_path = file_conversion.file_choice()
+            input_file_path = file_conversion.file_choice(logger=logger)
 
         # If the user closes the dialog, cancel the conversion
         if input_file_path is None:
@@ -192,9 +209,9 @@ class file_conversion:
         # Get the disk space that the file occupies
         file_size = file_conversion.get_disk_space(input_file_path)
         
-        print()
-        print("-------------------------------------------------------------------------------------------------------------------------------------")
-        print(f"Converting File: {input_file_path.name} to {output_file_format} ({file_size})")
+        logger.print()
+        logger.print("-------------------------------------------------------------------------------------------------------------------------------------")
+        logger.print(f"Converting File: {input_file_path.name} to {output_file_format} ({file_size})")
 
         conversion_failed = False
         error_message = None
@@ -251,11 +268,11 @@ class file_conversion:
             gc.collect()
 
         if conversion_failed:
-            print()
-            print(f"Failed to convert file: {input_file_path.name}")
-            print(f"Error: {error_message}")
-            print(error_traceback.rstrip())
-            print()
+            logger.print()
+            logger.print(f"Failed to convert file: {input_file_path.name}")
+            logger.print(f"Error: {error_message}")
+            logger.print(error_traceback.rstrip())
+            logger.print()
 
             # Create the report file
             file_conversion.create_single_file_error_report(
@@ -263,36 +280,41 @@ class file_conversion:
                 input_file_path,
                 error_message,
                 error_traceback,
+                logger=logger,
             )
-            print("-------------------------------------------------------------------------------------------------------------------------------------")
+            logger.print("-------------------------------------------------------------------------------------------------------------------------------------")
 
         else:
             # Different prints for different cases
             if image_series is not None and len(image_series) > 1 and output_file_format in (".tif", ".tiff"):
                 output_format_name = output_file.suffix.replace(".", "")
-                print(
+                logger.print(
                     f"Saved files to: "
                     f"{output_file.name.removesuffix(output_file.suffix)}_{output_format_name}"
                 )
 
             elif image_series is not None and len(image_series) > 1 and output_file_format == ".ome.zarr":
-                print(f"Saved files to: {output_file.name.removesuffix('.ome.zarr')}_omezarr")
+                logger.print(f"Saved files to: {output_file.name.removesuffix('.ome.zarr')}_omezarr")
 
             else:
-                print(f"Saved File: {output_file.name}")
-            print("-------------------------------------------------------------------------------------------------------------------------------------")
+                logger.print(f"Saved File: {output_file.name}")
+            logger.print("-------------------------------------------------------------------------------------------------------------------------------------")
             
 
 
-    def single_omezarr_conversion(output_file_format, input_file_path=None):
+    def single_omezarr_conversion(output_file_format, input_file_path=None, logger=None):
         """
         Performs the conversion algorithm for a single OME-Zarr/Zarr file.
         From file choice, reading as a dask array and writing as the intended format.
         """
+        
+        # Give the logger
+        logger = logger or ConsoleLogger()
+
 
         # If the folder was not yet chosen, let the user choose it
         if input_file_path is None:
-            input_file_path = file_conversion.zarr_choice()
+            input_file_path = file_conversion.zarr_choice(logger=logger)
 
         # If the user closes the dialog, cancel the conversion
         if input_file_path is None:
@@ -301,9 +323,9 @@ class file_conversion:
         # Get the disk space that the file occupies
         file_size = file_conversion.get_disk_space(input_file_path)
         
-        print()
-        print("-------------------------------------------------------------------------------------------------------------------------------------")
-        print(f"Converting File: {input_file_path.name} to {output_file_format} ({file_size})")
+        logger.print()
+        logger.print("-------------------------------------------------------------------------------------------------------------------------------------")
+        logger.print(f"Converting File: {input_file_path.name} to {output_file_format} ({file_size})")
 
         conversion_failed = False
         error_message = None
@@ -360,11 +382,11 @@ class file_conversion:
             gc.collect()
 
         if conversion_failed:
-            print()
-            print(f"Failed to convert file: {input_file_path.name}")
-            print(f"Error: {error_message}")
-            print(error_traceback.rstrip())
-            print()
+            logger.print()
+            logger.print(f"Failed to convert file: {input_file_path.name}")
+            logger.print(f"Error: {error_message}")
+            logger.print(error_traceback.rstrip())
+            logger.print()
 
             # Create the report file
             file_conversion.create_single_file_error_report(
@@ -372,33 +394,37 @@ class file_conversion:
                 input_file_path,
                 error_message,
                 error_traceback,
+                logger=logger,
             )
-            print("-------------------------------------------------------------------------------------------------------------------------------------")
+            logger.print("-------------------------------------------------------------------------------------------------------------------------------------")
 
         else:
             # Different prints for different cases
             if image_series is not None and len(image_series) > 1 and output_file_format in (".tif", ".tiff"):
                 output_format_name = output_file.suffix.replace(".", "")
-                print(
+                logger.print(
                     f"Saved files to: "
                     f"{output_file.name.removesuffix(output_file.suffix)}_{output_format_name}"
                 )
 
             elif image_series is not None and len(image_series) > 1 and output_file_format == ".ome.zarr":
-                print(f"Saved files to: {output_file.name.removesuffix('.ome.zarr')}_omezarr")
+                logger.print(f"Saved files to: {output_file.name.removesuffix('.ome.zarr')}_omezarr")
 
             else:
-                print(f"Saved File: {output_file.name}")
-            print("-------------------------------------------------------------------------------------------------------------------------------------")
+                logger.print(f"Saved File: {output_file.name}")
+            logger.print("-------------------------------------------------------------------------------------------------------------------------------------")
 
 
     ##############################################
     # Helper functions
 
-    def file_choice():
+    def file_choice(logger=None):
         """
         Open a PySide6 dialog to choose a single microscopy file.
         """
+        
+        # Give the logger
+        logger = logger or ConsoleLogger()
 
         app = QApplication.instance() or QApplication([])
 
@@ -410,18 +436,21 @@ class file_conversion:
         )
 
         if not file_path:
-            print()
-            print("No file selected.")
+            logger.print()
+            logger.print("No file selected.")
             return None
         
         return Path(file_path)
     
     #--------------------------------------------------------------------------
     
-    def zarr_choice():
+    def zarr_choice(logger=None):
         """
         Open a PySide6 dialog to choose a single OME-Zarr/Zarr file
         """
+
+        # Give the logger
+        logger = logger or ConsoleLogger()
 
         is_it_omezarr = False
 
@@ -435,8 +464,8 @@ class file_conversion:
             )
 
             if not zarr_path:
-                print()
-                print("No OME-Zarr/Zarr file selected.")
+                logger.print()
+                logger.print("No OME-Zarr/Zarr file selected.")
                 return None
             
             zarr_path = Path(zarr_path)
@@ -446,9 +475,9 @@ class file_conversion:
                 is_it_omezarr = True
 
             else:
-                print()
-                print("Selected folder is not an OME-Zarr/Zarr.")
-                print("Please choose another folder.")
+                logger.print()
+                logger.print("Selected folder is not an OME-Zarr/Zarr.")
+                logger.print("Please choose another folder.")
 
                 QApplication.processEvents()
 
@@ -457,10 +486,13 @@ class file_conversion:
     #--------------------------------------------------------------------------
 
         
-    def folder_choice(parent=None):
+    def folder_choice(parent=None, logger=None):
         """
         Open a PySide6 dialog to choose a folder and screen it for microscopy files.
         """
+
+        # Give the logger
+        logger = logger or ConsoleLogger()
 
         # Start a bool variable to detect the presence of microscopy files
         are_there_microscopy_files = False
@@ -478,8 +510,8 @@ class file_conversion:
 
             # If no folder was selected, simply cancel the conversion
             if not folder_path:
-                print()
-                print("No folder selected.")
+                logger.print()
+                logger.print("No folder selected.")
                 return [], 0, None
 
             # Introduce the Path variable
@@ -492,9 +524,9 @@ class file_conversion:
             if len(files) != 0:
                 are_there_microscopy_files = True
             else:
-                print()
-                print("No microscopy files found in this folder.", flush=True)
-                print("Choose another folder.")
+                logger.print()
+                logger.print("No microscopy files found in this folder.", flush=True)
+                logger.print("Choose another folder.")
 
         n_files = len(files)
 
@@ -648,10 +680,13 @@ class file_conversion:
     #--------------------------------------------------------------------------
 
     
-    def create_report(output_folder, n_files, successful_files, failed_files, failed_file_reports):
+    def create_report(output_folder, n_files, successful_files, failed_files, failed_file_reports, logger=None):
         """
         Creates a report listing the errors for failed files
         """
+
+        # Give the logger
+        logger = logger or ConsoleLogger()
 
         # Immediately leave this function if there are no failed files
         if failed_files == 0:
@@ -677,15 +712,18 @@ class file_conversion:
 
         report_path_to_print = report_file.relative_to(Path(output_folder).parent)
 
-        print()
-        print(f"Conversion report saved to: {report_path_to_print}")
+        logger.print()
+        logger.print(f"Conversion report saved to: {report_path_to_print}")
 
     #--------------------------------------------------------------------------
 
-    def create_single_file_error_report(output_folder, input_file_path, error_message, error_traceback):
+    def create_single_file_error_report(output_folder, input_file_path, error_message, error_traceback, logger=None):
         """
         Creates a report that saves the error for a failed single-file conversion
         """
+
+        # Give the logger
+        logger = logger or ConsoleLogger()
 
         # Create the .txt
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -700,8 +738,8 @@ class file_conversion:
             report.write("----------\n")
             report.write(error_traceback)
 
-        print()
-        print(f"Conversion error report saved to: {report_file}")
+        logger.print()
+        logger.print(f"Conversion error report saved to: {report_file}")
 
     #--------------------------------------------------------------------------
 

@@ -1,14 +1,8 @@
 # TO-DO
 
-- Add .ics format support
+- Add a logger that replaces the printing in the console window
 
-- Validate the time-frame metadata in all file formats:
-    Remaining:
-    - lif
-    - zarrs - .zarr, .ome.zarr 
-    - tifs - .tif, .tiff, .ome.tif, .ome.tiff
-    - zvi
-    - nd2
+- Add .ics format support
 
 - Preserve time-spacing when available
     reamining
@@ -29,3 +23,11 @@
 
 - ? maybe add the available pyramids of .ims datasets to the reading and writing protocols
 - Add significant bit-depth metadata (important for the case of 12 bit data)
+
+- Validate the time-frame metadata in all file formats:
+    Remaining:
+    - lif
+    - zarrs - .zarr, .ome.zarr 
+    - tifs - .tif, .tiff, .ome.tif, .ome.tiff
+    - zvi
+    - nd2
