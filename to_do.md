@@ -1,6 +1,6 @@
 # TO-DO
 
-- Add a logger that replaces the printing in the console window
+- make the logger work in parallel with the conversion 
 
 - Add .ics format support
 
