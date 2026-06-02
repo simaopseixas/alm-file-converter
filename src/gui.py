@@ -1,16 +1,54 @@
 """
 This file builds the main GUI of the program, where the user chooses the conversion parameters.
 In this window the output file format and whether the program performs a batch conversion or a single file conversion can be chosen by the user.
-Then, after the start of the converison process, this window disappears, and the logger window remains, displaying information about the conversion.
+Then, after the start of the converison process, this window disappears and the conversion process starts in a new thread.
+During the conversion only the logger window remains, displaying information about the conversion.
 When the conversion process is done, this window reappears, to allow the user to perform another conversion.
 """
 
 import sys
 from pathlib import Path
-from PySide6.QtCore import Qt, QSettings, QTimer, QObject, QEvent, QPoint, QUrl
+from PySide6.QtCore import Qt, QSettings, QTimer, QObject, QEvent, QPoint, QUrl, Signal, Slot
 from PySide6.QtGui import QIcon, QDesktopServices
 from PySide6.QtWidgets import  QApplication, QCheckBox, QComboBox, QHBoxLayout, QLabel, QPushButton, QSizePolicy, QVBoxLayout, QWidget, QDialog
 from conversion_pipeline import file_conversion
+
+#############################################################
+# Threaded Conversion
+
+class SignalLogger:
+    """
+    This is a logger adapter that essentially builds a bridge between the conversion
+    that happens in a separate thread and the logging that happens in the main one.
+
+    The conversion pipeline expects an object with a "logger.print(...)" method.
+    The LoggerWindow class already has that method, but the GUI must stay in the main thread.
+    This class gives the worker thread a safe logger-like object that emits this text through a Qt Signal.
+    """
+
+    def __init__(self, signal):
+        """
+        Store the signal that will carry the text to the GUI thread.
+        """
+        self.signal = signal
+
+    def print(self, *args, sep=" ", end="\n", flush=False):
+        """
+        Match python's print and emit the message
+        """
+
+        text = []
+
+        for arg in args:
+            text.append(str(arg))
+
+        message = sep.join(text)
+        message += end
+
+        self.signal.emit(message)
+
+
+
 
 
 #############################################################
