@@ -1,3 +1,9 @@
+"""
+This file builds one of the windows of the GUI.
+In this window, the Logger Window, some messages about the conversions that are happening are displayed for the user.
+It does this by employing a "print" function that can be used in the rest of the code that writes into the window.
+"""
+
 from PySide6.QtCore import Qt, Signal, QEvent
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QPlainTextEdit, QApplication
 from PySide6.QtGui import QTextCursor, QFont

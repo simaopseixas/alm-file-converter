@@ -1,32 +1,30 @@
 """
-This file has various functions to read data from each file format either as a zarr or a numpy array
+This file has various functions to read data from each file format either as a dask array or as a numpy array in the case of .zvi.
+Currently supported reading formats:
+- .ims, .lif, .nd2, .zvi, .tif, .tiff, .ome.tif, .ome.tiff, .ome.zarr
+
+It also has various functions to write data with various file formats.
+Currently supported writing formats:
+- .ome.tif, .ome.tiff, .ome.zarr, .tif, .tiff
 """
 
 #################################################################
 # Imports
 
 from __future__ import annotations
-
 from pathlib import Path
-
 import zarr
 import tifffile
 import dask.array
 import dask
 import numpy as np
-
 from readlif.reader import LifFile
-
 import nd2
-
 import contextlib
 import os
-
 from bioio import BioImage
 import bioio_bioformats
-
 import ngff_zarr as nz
-
 import h5py
 
 #################################################################

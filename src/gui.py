@@ -1,28 +1,20 @@
+"""
+This file builds the main GUI of the program, where the user chooses the conversion parameters.
+In this window the output file format and whether the program performs a batch conversion or a single file conversion can be chosen by the user.
+Then, after the start of the converison process, this window disappears, and the logger window remains, displaying information about the conversion.
+When the conversion process is done, this window reappears, to allow the user to perform another conversion.
+"""
+
 import sys
 from pathlib import Path
-
 from PySide6.QtCore import Qt, QSettings, QTimer, QObject, QEvent, QPoint, QUrl
 from PySide6.QtGui import QIcon, QDesktopServices
-from PySide6.QtWidgets import (
-    QApplication,
-    QCheckBox,
-    QComboBox,
-    QHBoxLayout,
-    QLabel,
-    QPushButton,
-    QSizePolicy,
-    QVBoxLayout,
-    QWidget,
-    QDialog,
-)
+from PySide6.QtWidgets import  QApplication, QCheckBox, QComboBox, QHBoxLayout, QLabel, QPushButton, QSizePolicy, QVBoxLayout, QWidget, QDialog
 from conversion_pipeline import file_conversion
+
 
 #############################################################
 # Main GUI
-
-"""
-This class manages the main GUI of the software
-"""
 
 class ConverterWidget(QWidget):
 
