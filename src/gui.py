@@ -8,7 +8,7 @@ When the conversion process is done, this window reappears, to allow the user to
 
 import sys
 from pathlib import Path
-from PySide6.QtCore import Qt, QSettings, QTimer, QObject, QEvent, QPoint, QUrl, Signal, Slot
+from PySide6.QtCore import Qt, QSettings, QTimer, QObject, QEvent, QPoint, QUrl, QThread, Signal, Slot
 from PySide6.QtGui import QIcon, QDesktopServices
 from PySide6.QtWidgets import  QApplication, QCheckBox, QComboBox, QHBoxLayout, QLabel, QPushButton, QSizePolicy, QVBoxLayout, QWidget, QDialog
 from conversion_pipeline import file_conversion
@@ -48,6 +48,65 @@ class SignalLogger:
         self.signal.emit(message)
 
 
+class ConversionWorker(QObject):
+    """
+    This is an object that runs a conversion outside of the main GUI thread.
+
+    In ConverterWidget this object is moved into a QThread when conversion starts.
+    It performs the expensive reading/writing process while the Qt event loop remains free
+    to write on the logger window.
+
+    It never touches the GUI Qt widgets directly. Communication back to the GUI is done only through signals
+    """
+
+    # Define the signals
+
+    # signal that carries text from the worker thread to the logger window
+    log = Signal(str)
+    # signal that is used when the conversion ends to restore the main window and clean up the thread
+    finished = Signal()
+
+    def __init__(self, conversion_mode, output_file_format, input_file_path=None, input_file_paths=None, n_files=None, input_folder=None):
+        """
+        Store the conversion type and its arguments
+        "conversion_mode" can be: "single_file", "single_zarr" or "batch".
+        """
+
+        super().__init__()
+
+        # Store the arguments as global variables
+        self.conversion_type = conversion_mode
+        self.output_file_format = output_file_format
+        self.input_file_path = input_file_path
+        self.input_file_paths = input_file_paths
+        self.n_files = n_files
+        self.input_folder = input_folder
+
+    @Slot()
+    def run(self):
+        """
+        Runs the selected conversion in a worker thread.
+        """
+
+        # start a logger object for the conversion pipeline
+        logger = SignalLogger(self.log)
+
+        try:
+            # single-file conversion
+            if self.conversion_type == "single_file":
+                file_conversion.single_file_conversion(self.output_file_format, self.input_file_path, logger=logger)
+
+            # single OME-Zarr/Zarr file conversion
+            elif self.conversion_type == "single_zarr":
+                file_conversion.single_omezarr_conversion(self.output_file_format, self.input_file_path, logger=logger)
+
+            # batch conversion
+            elif self.conversion_type == "batch":
+                file_conversion.batch_conversion(self.output_file_format, self.input_file_paths, self.n_files, self.input_folder, logger=logger)
+
+        # always notify the GUI that the worker finished
+        finally:
+            self.finished.emit()
 
 
 
