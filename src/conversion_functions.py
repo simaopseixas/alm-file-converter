@@ -1198,6 +1198,7 @@ class writing_functions:
                 img_axes = series["axes"]
                 voxel_size_metadata = series["voxel_size_metadata"]
                 time_metadata = series["time_metadata"]
+                position_metadata = series["position_metadata"]
 
                 # Raise an error if the axes are not in the TCZYX format
                 if img_axes != "TCZYX":

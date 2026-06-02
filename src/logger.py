@@ -5,7 +5,7 @@ It does this by employing a "print" function that can be used in the rest of the
 """
 
 from PySide6.QtCore import Qt, Signal, QEvent
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QPlainTextEdit, QApplication
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QPlainTextEdit
 from PySide6.QtGui import QTextCursor, QFont
 
 #######################################################################
@@ -37,7 +37,8 @@ class LoggerWindow(QWidget):
             Qt.Window |
             Qt.CustomizeWindowHint |
             Qt.WindowTitleHint |
-            Qt.WindowMinimizeButtonHint
+            Qt.WindowMinimizeButtonHint |
+            Qt.WindowCloseButtonHint
         )
 
         self.text_box = QPlainTextEdit()
@@ -64,13 +65,19 @@ class LoggerWindow(QWidget):
         Function that runs when the logger is closed
         """
 
-        # If it is supposed to close
         if self.allow_close:
             event.accept()
+            return
 
-        # If not
-        else:
-            event.ignore()
+        if self.main_window is not None:
+            if self.main_window.close():
+                event.accept()
+            else:
+                event.ignore()
+            return
+
+        event.accept()
+
 
     def changeEvent(self, event):
         """
@@ -133,7 +140,6 @@ class LoggerWindow(QWidget):
         self.text_box.insertPlainText(text)
         self.text_box.ensureCursorVisible()
 
-        QApplication.processEvents()
 
     def close_from_main_window(self):
         """

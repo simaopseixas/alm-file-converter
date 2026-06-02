@@ -7,6 +7,7 @@ When the conversion process is done, this window reappears, to allow the user to
 """
 
 import sys
+import os
 from pathlib import Path
 from PySide6.QtCore import Qt, QSettings, QTimer, QObject, QEvent, QPoint, QUrl, QThread, Signal, Slot
 from PySide6.QtGui import QIcon, QDesktopServices
@@ -82,6 +83,7 @@ class ConversionWorker(QObject):
         self.n_files = n_files
         self.input_folder = input_folder
 
+
     @Slot()
     def run(self):
         """
@@ -114,6 +116,9 @@ class ConversionWorker(QObject):
 # Main GUI
 
 class ConverterWidget(QWidget):
+    """
+    Class that handles the logic and behavior of the main window of the GUI.
+    """
 
 
     def __init__(self, logger=None, parent=None):
@@ -127,6 +132,8 @@ class ConverterWidget(QWidget):
         self.logger = logger
         # synchronization flag
         self.syncing_window_state = False
+        # conversion running flag
+        self.conversion_running = False
 
         self.attributes_dir = Path(__file__).resolve().parent / "attributes"
         self.tooltip_manager = CustomToolTipManager(self)
@@ -138,7 +145,17 @@ class ConverterWidget(QWidget):
         Function that handles the closing of the program
         """
 
-        # Close the logger as well
+        # logic to cancel a conversion and close the program
+        if self.conversion_running:
+            if self.logger is not None:
+                self.logger.print()
+                self.logger.print("Stopping conversion and closing...")
+
+            QTimer.singleShot(2000, lambda: os._exit(0))
+            event.ignore()
+            return
+
+        # normal logic to close the program without any conversion happening
         if self.logger is not None:
             self.logger.close_from_main_window()
 
@@ -186,6 +203,56 @@ class ConverterWidget(QWidget):
     #--------------------------------------------------
     # Algorithm Functions
 
+    def conversion_finished(self):
+        """
+        Function that runs when the conversion worker finishes.
+        """
+
+        self.conversion_running = False
+        self.restore_window()
+
+    def start_conversion_worker(self, conversion_mode, output_file_format, input_file_path=None, input_file_paths=None, n_files=None, input_folder=None):
+        """
+        Function that starts the conversion in a separate thread
+        """
+
+        # hide the main window while the conversion is running
+        self.hide()
+
+        # make the conversion running flag go True
+        self.conversion_running = True
+
+        # create the thread object
+        self.conversion_thread = QThread(self)
+
+        # create the worker object
+        self.conversion_worker = ConversionWorker(
+            conversion_mode,
+            output_file_format,
+            input_file_path=input_file_path,
+            input_file_paths=input_file_paths,
+            n_files=n_files,
+            input_folder=input_folder,
+        )
+
+        # move the worker into the new thread
+        self.conversion_worker.moveToThread(self.conversion_thread)
+        # when the thread starts, run the conversion
+        self.conversion_thread.started.connect(self.conversion_worker.run)
+        # send worker messages to the logger window
+        self.conversion_worker.log.connect(self.logger.append_text, Qt.QueuedConnection)
+        # stop the thread when the conversion finishes
+        self.conversion_worker.finished.connect(self.conversion_thread.quit)
+        # delete the worker after the conversion finishes
+        self.conversion_worker.finished.connect(self.conversion_worker.deleteLater)
+        # delete the thread after the conversion finishes
+        self.conversion_thread.finished.connect(self.conversion_thread.deleteLater)
+        # end the process in the worker by running the conversion finished function
+        self.conversion_worker.finished.connect(self.conversion_finished)
+
+        # start the thread
+        self.conversion_thread.start()
+
     def run_single_file_conversion(self):
         """
         Function that handles the conversion of a single microscopy file inside the GUI
@@ -200,15 +267,8 @@ class ConverterWidget(QWidget):
         if input_file_path is None:
             return
 
-        # hide the GUI while the conversion happens
-        self.hide()
-        QApplication.processEvents()
-
         # Initialize the single-file conversion algorithm
-        try:
-            file_conversion.single_file_conversion(output_file_format, input_file_path, logger=self.logger)
-        finally:
-            self.restore_window()
+        self.start_conversion_worker("single_file", output_file_format, input_file_path=input_file_path)
 
     
     def run_single_omezarr_conversion(self):
@@ -225,15 +285,8 @@ class ConverterWidget(QWidget):
         if input_file_path is None:
             return
 
-        # hide the GUI while the conversion happens
-        self.hide()
-        QApplication.processEvents()
-
         # Initialize the single-file conversion algorithm
-        try:
-            file_conversion.single_omezarr_conversion(output_file_format, input_file_path, logger=self.logger)
-        finally:
-            self.restore_window()
+        self.start_conversion_worker("single_zarr", output_file_format, input_file_path=input_file_path)
 
 
     def run_batch_conversion(self):
@@ -250,15 +303,9 @@ class ConverterWidget(QWidget):
         if input_folder is None:
             return
 
-        # Hide the GUI window while the conversion happens
-        self.hide()
-        QApplication.processEvents()
-
         # Initialize the conversion algorithm
-        try:
-            file_conversion.batch_conversion(output_file_format, input_file_paths, n_files, input_folder, logger=self.logger)
-        finally:
-            self.restore_window()
+        self.start_conversion_worker("batch", output_file_format, input_file_paths=input_file_paths, n_files=n_files, input_folder=input_folder)
+
 
     #--------------------------------------------------
     # UI
