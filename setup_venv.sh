@@ -15,10 +15,17 @@ fi
 
 echo ""
 echo "====================================="
-echo "Creating Python 3.10 virtual env..."
+echo "Installing managed Python 3.12..."
 echo "====================================="
 
-uv venv --python 3.10
+uv python install 3.12
+
+echo ""
+echo "====================================="
+echo "Creating Python 3.12 virtual env..."
+echo "====================================="
+
+uv venv --python 3.12 --managed-python
 
 echo ""
 echo "====================================="
