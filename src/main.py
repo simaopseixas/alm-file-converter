@@ -3,8 +3,8 @@ from pathlib import Path
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication
 
-from gui import ConverterWidget
-from logger import LoggerWindow
+from gui_converter import ConverterWidget
+from gui_logger import LoggerWindow
 
 
 if __name__ == "__main__":

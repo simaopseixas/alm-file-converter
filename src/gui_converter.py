@@ -24,7 +24,8 @@ class SignalLogger:
 
     The conversion pipeline expects an object with a "logger.print(...)" method.
     The LoggerWindow class already has that method, but the GUI must stay in the main thread.
-    This class gives the worker thread a safe logger-like object that emits this text through a Qt Signal.
+    This class gives the worker thread a safe logging object that emits text with information
+    about the conversion through a Qt Signal.
     """
 
     def __init__(self, signal):
@@ -54,14 +55,13 @@ class ConversionWorker(QObject):
     This is an object that runs a conversion outside of the main GUI thread.
 
     In ConverterWidget this object is moved into a QThread when conversion starts.
-    It performs the expensive reading/writing process while the Qt event loop remains free
+    It performs the reading/writing process while the Qt event loop remains free
     to write on the logger window.
 
-    It never touches the GUI Qt widgets directly. Communication back to the GUI is done only through signals
+    It never touches the GUI Qt widgets directly. Communication back to the GUI is done only through signals.
     """
 
     # Define the signals
-
     # signal that carries text from the worker thread to the logger window
     log = Signal(str)
     # signal that is used when the conversion ends to restore the main window and clean up the thread
