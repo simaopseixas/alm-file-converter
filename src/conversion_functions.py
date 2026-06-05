@@ -225,14 +225,18 @@ class file_reading_functions:
                 imagej_metadata = tif.imagej_metadata or {}
 
                 # Get the position metadata
+            
+                # Here we are solving for the origin:
+                # physical_x = (x_pixel - xorigin) * voxel_x <=> physical_x=0 = - xorigin * voxel_x
+                
                 if imagej_metadata.get("xorigin") is not None and voxel_size_metadata["x"] is not None:
-                    position_metadata["x"] = -float(imagej_metadata["xorigin"]) * voxel_size_metadata["x"]
+                    position_metadata["x"] = - float(imagej_metadata["xorigin"]) * voxel_size_metadata["x"]
 
                 if imagej_metadata.get("yorigin") is not None and voxel_size_metadata["y"] is not None:
-                    position_metadata["y"] = -float(imagej_metadata["yorigin"]) * voxel_size_metadata["y"]
+                    position_metadata["y"] = - float(imagej_metadata["yorigin"]) * voxel_size_metadata["y"]
 
                 if imagej_metadata.get("zorigin") is not None and voxel_size_metadata["z"] is not None:
-                    position_metadata["z"] = -float(imagej_metadata["zorigin"]) * voxel_size_metadata["z"]
+                    position_metadata["z"] = - float(imagej_metadata["zorigin"]) * voxel_size_metadata["z"]
 
             return voxel_size_metadata, time_metadata, position_metadata
     
@@ -965,7 +969,6 @@ class file_reading_functions:
                 },
             }
 
-
             return voxel_size_metadata, time_metadata, position_metadata
 
 
@@ -1314,7 +1317,7 @@ class writing_functions:
                     for c in range(C):
                         yield np.ascontiguousarray(c_stack[c, :, :])
 
-        def get_fiji_metadata(T, C, Z, voxel_size_metadata, time_metadata):
+        def get_fiji_metadata(T, C, Z, voxel_size_metadata, time_metadata, position_metadata):
             """
             Helper function that computes axes and voxel size metadata for Fiji/ImageJ
             """
@@ -1329,6 +1332,7 @@ class writing_functions:
                 "mode": "composite",
             }
 
+            #-----------------------------------------------------------
             # Get the voxel size metadata
             if voxel_size_metadata["z"] is not None:
                 metadata["spacing"] = voxel_size_metadata["z"]
@@ -1342,9 +1346,36 @@ class writing_functions:
                 # Assume micrometer unit since the reader converts any unit to micrometers
                 metadata["unit"] = "um"
 
+            #-----------------------------------------------------------
             # Get the time metadata
             if time_metadata["t"] is not None:
                 metadata["finterval"] = time_metadata["t"]
+
+
+            #-----------------------------------------------------------
+            # Get the positional metadata
+
+            position_x = position_metadata.get("x")
+            position_y = position_metadata.get("y")
+            position_z = position_metadata.get("z")
+
+            voxel_x = voxel_size_metadata.get("x")
+            voxel_y = voxel_size_metadata.get("y")
+            voxel_z = voxel_size_metadata.get("z")
+
+            # Here we are solving for the origin:
+            # physical_x = (x_pixel - xorigin) * voxel_x => physical_x=0 = (0 - xorigin) * voxel_x <=>
+            # <=> xorigin = - position_x / voxel_x 
+
+            if position_x is not None and voxel_x not in (None, 0):
+                metadata["xorigin"] = - position_x / voxel_x 
+
+            if position_y is not None and voxel_y not in (None, 0):
+                metadata["yorigin"] = - position_y / voxel_y
+
+            if position_z is not None and voxel_z not in (None, 0):
+                metadata["zorigin"] = - position_z / voxel_z
+
 
             return metadata
         
@@ -1375,6 +1406,7 @@ class writing_functions:
             img_axes = series["axes"]
             voxel_size_metadata = series["voxel_size_metadata"]
             time_metadata = series["time_metadata"]
+            position_metadata = series["position_metadata"]
 
             # Raise an error if the axes are not the correct ones
             if img_axes != "TCZYX":
@@ -1390,7 +1422,7 @@ class writing_functions:
                     shape=(T, Z, C, Y, X),
                     dtype=img_array.dtype,
                     photometric="minisblack",
-                    metadata=get_fiji_metadata(T, C, Z, voxel_size_metadata, time_metadata),
+                    metadata=get_fiji_metadata(T, C, Z, voxel_size_metadata, time_metadata, position_metadata),
                     resolution=get_resolution(voxel_size_metadata),
                 )
 

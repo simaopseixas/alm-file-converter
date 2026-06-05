@@ -6,14 +6,24 @@
     reamining
         .ims (I WILL NEED A TIME FRAME FILE)
 
-- Preserve positional metadata when available
-    Remaining:
-    - ims
-    - tifs
-    - lif
-    - zarrs
-    - zvi
-    - nd2
+- Preserve positional metadata reading when available
+    - [X] lif
+    - [] zarrs
+    - [] zvi
+    - [] nd2
+    - [] lif
+    - [X] ims
+    - [X] tif
+    - [X] tiff
+    - [X] ome.tif
+    - [X] ome.tiff
+
+- Write positional metadata onto the available file formats:
+    - [] ome.zarr
+    - [] tif
+    - [] tiff
+    - [X] ome.tif
+    - [X] ome.tiff
      
 ### Future
 
