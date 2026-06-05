@@ -11,7 +11,7 @@
     - [] zarrs
     - [] zvi
     - [] nd2
-    - [] lif
+    - [X] lif
     - [X] ims
     - [X] tif
     - [X] tiff
@@ -20,8 +20,8 @@
 
 - Write positional metadata onto the available file formats:
     - [] ome.zarr
-    - [] tif
-    - [] tiff
+    - [X] tif
+    - [X] tiff
     - [X] ome.tif
     - [X] ome.tiff
      

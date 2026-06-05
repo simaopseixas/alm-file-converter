@@ -228,7 +228,7 @@ class file_reading_functions:
             
                 # Here we are solving for the origin:
                 # physical_x = (x_pixel - xorigin) * voxel_x <=> physical_x=0 = - xorigin * voxel_x
-                
+
                 if imagej_metadata.get("xorigin") is not None and voxel_size_metadata["x"] is not None:
                     position_metadata["x"] = - float(imagej_metadata["xorigin"]) * voxel_size_metadata["x"]
 
@@ -1086,6 +1086,20 @@ class writing_functions:
 
             return scale
         
+        def get_translation(position_metadata):
+            """
+            Helper function that gets the position metadata as a translation for the 5D TCZYX stack
+            """
+
+            # Compute the translation dictionary
+            translation = {
+                "z": position_metadata["z"] if position_metadata.get("z") is not None else 0,
+                "y": position_metadata["y"] if position_metadata.get("y") is not None else 0,
+                "x": position_metadata["x"] if position_metadata.get("x") is not None else 0,
+            }
+
+            return translation
+        
         def write_single_ome_zarr(series_output_path, series):
             """
             Helper function that writes a single 5D OME-ZARR file
@@ -1096,6 +1110,7 @@ class writing_functions:
             img_axes = series["axes"]
             voxel_size_metadata = series["voxel_size_metadata"]
             time_metadata = series["time_metadata"]
+            position_metadata = series["position_metadata"]
 
             # Raise an error if the axes are not TCZYX
             if img_axes != "TCZYX":
@@ -1106,6 +1121,7 @@ class writing_functions:
                 img_array,
                 dims=["t", "c", "z", "y", "x"],
                 scale=get_scale(voxel_size_metadata, time_metadata),
+                translation=get_translation(position_metadata),
                 axes_units={
                     "t": "second",
                     "z": "micrometer",
