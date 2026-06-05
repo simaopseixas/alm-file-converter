@@ -19,7 +19,7 @@
     - [X] ome.tiff
 
 - Write positional metadata onto the available file formats:
-    - [] ome.zarr
+    - [X] ome.zarr
     - [X] tif
     - [X] tiff
     - [X] ome.tif
