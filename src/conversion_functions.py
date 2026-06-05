@@ -177,6 +177,16 @@ class file_reading_functions:
                 "y": None,
                 "z": None,
                 "unit": "micrometer",
+                "extent_min": {
+                    "x": None,
+                    "y": None,
+                    "z": None,
+                },
+                "extent_max": {
+                    "x": None,
+                    "y": None,
+                    "z": None,
+                },
             }
 
             # Get OME time metadata
@@ -301,7 +311,25 @@ class file_reading_functions:
             # Get the time frame
             time_metadata = {"t": scale.get("t", None)}
 
-            return voxel_size_metadata, time_metadata
+            # Get the position metadata (STILL NEEDS TO BE ADDED - TEMPORARY FIX WITH "NONEs")
+            position_metadata = {
+                "x": None,
+                "y": None,
+                "z": None,
+                "unit": "micrometer",
+                "extent_min": {
+                    "x": None,
+                    "y": None,
+                    "z": None,
+                },
+                "extent_max": {
+                    "x": None,
+                    "y": None,
+                    "z": None,
+                },
+            }
+
+            return voxel_size_metadata, time_metadata, position_metadata
         
         # Access the dask image
         multiscales = nz.from_ngff_zarr(str(file_path))
@@ -320,13 +348,14 @@ class file_reading_functions:
             )
         
         # Get the metadata
-        voxel_size_metadata, time_metadata = get_zarr_metadata(image)
+        voxel_size_metadata, time_metadata, position_metadata = get_zarr_metadata(image)
 
         image_series = [{
             "array": img_array,
             "axes": img_axes,
             "voxel_size_metadata": voxel_size_metadata,
             "time_metadata": time_metadata,
+            "position_metadata": position_metadata,
         }]
 
         return image_series
@@ -806,7 +835,27 @@ class file_reading_functions:
                         time_metadata["t"] = avg_ms / 1000
                         break
 
-            return voxel_size_metadata, time_metadata
+            #------------------------------------------------------
+            # Position Metadata (STILL NEEDS TO BE IMPLEMENTED)
+
+            position_metadata = {
+                "x": None,
+                "y": None,
+                "z": None,
+                "unit": "micrometer",
+                "extent_min": {
+                    "x": None,
+                    "y": None,
+                    "z": None,
+                },
+                "extent_max": {
+                    "x": None,
+                    "y": None,
+                    "z": None,
+                },
+            }
+
+            return voxel_size_metadata, time_metadata, position_metadata
         
 
         # Access the nd2 file
@@ -819,7 +868,7 @@ class file_reading_functions:
         img_axes = "".join(nd2_file.sizes.keys()).upper()
 
         # Get metadata
-        voxel_size_metadata, time_metadata = get_nd2_metadata(nd2_file)
+        voxel_size_metadata, time_metadata, position_metadata = get_nd2_metadata(nd2_file)
 
         # Detect ND2 position/view axis
         position_axis_name = None
@@ -846,7 +895,8 @@ class file_reading_functions:
                     "array": image_array,
                     "axes": series_axes,
                     "voxel_size_metadata": voxel_size_metadata,
-                    "time_metadata": time_metadata
+                    "time_metadata": time_metadata,
+                    "position_metadata": position_metadata,
                 })
 
                 # Append the closing function in the final position
@@ -860,6 +910,7 @@ class file_reading_functions:
                 "axes": img_axes,
                 "voxel_size_metadata": voxel_size_metadata,
                 "time_metadata": time_metadata,
+                "position_metadata": position_metadata,
                 "file_close_function": nd2_file.close   # closing function to be used during conversion
             })
 
@@ -896,7 +947,26 @@ class file_reading_functions:
                 "t": zvi_img.time_interval if zvi_img.time_interval else None,
             }
 
-            return voxel_size_metadata, time_metadata
+            # Get positional metadata (STILL NEEDS TO BE IMPLEMENTED)
+            position_metadata = {
+                "x": None,
+                "y": None,
+                "z": None,
+                "unit": "micrometer",
+                "extent_min": {
+                    "x": None,
+                    "y": None,
+                    "z": None,
+                },
+                "extent_max": {
+                    "x": None,
+                    "y": None,
+                    "z": None,
+                },
+            }
+
+
+            return voxel_size_metadata, time_metadata, position_metadata
 
 
         # Access the .zvi file
@@ -906,7 +976,7 @@ class file_reading_functions:
         img_array = img.get_image_data("TCZYX")
 
         # Get the metadata
-        voxel_size_metadata, time_metadata = get_zvi_metadata(img)
+        voxel_size_metadata, time_metadata, position_metadata = get_zvi_metadata(img)
 
         # Convert the numpy array to dask, to make it compatible with the conversion pipeline
         img_array = dask.array.from_array(
@@ -918,7 +988,8 @@ class file_reading_functions:
             "array": img_array,
             "axes": "TCZYX",
             "voxel_size_metadata": voxel_size_metadata,
-            "time_metadata": time_metadata
+            "time_metadata": time_metadata,
+            "position_metadata": position_metadata,
         }]
 
 

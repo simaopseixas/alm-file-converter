@@ -1,14 +1,10 @@
 # TO-DO
 
-- make the logger work in parallel with the conversion 
-
 - Add .ics format support
 
 - Preserve time-spacing when available
     reamining
         .ims (I WILL NEED A TIME FRAME FILE)
-
-- Preserve positional metadata when available
 
 - Preserve positional metadata when available
     Remaining:
