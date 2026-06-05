@@ -216,9 +216,6 @@ class ConverterWidget(QWidget):
         Function that starts the conversion in a separate thread
         """
 
-        # hide the main window while the conversion is running
-        self.hide()
-
         # make the conversion running flag go True
         self.conversion_running = True
 
@@ -266,6 +263,10 @@ class ConverterWidget(QWidget):
 
         if input_file_path is None:
             return
+        
+        # Hide the main window of the GUI
+        self.hide()
+        QApplication.processEvents()
 
         # Initialize the single-file conversion algorithm
         self.start_conversion_worker("single_file", output_file_format, input_file_path=input_file_path)
@@ -284,6 +285,10 @@ class ConverterWidget(QWidget):
 
         if input_file_path is None:
             return
+        
+        # Hide the main window of the GUI
+        self.hide()
+        QApplication.processEvents()
 
         # Initialize the single-file conversion algorithm
         self.start_conversion_worker("single_zarr", output_file_format, input_file_path=input_file_path)
@@ -302,6 +307,10 @@ class ConverterWidget(QWidget):
 
         if input_folder is None:
             return
+
+        # Hide the main window of the GUI
+        self.hide()
+        QApplication.processEvents()
 
         # Initialize the conversion algorithm
         self.start_conversion_worker("batch", output_file_format, input_file_paths=input_file_paths, n_files=n_files, input_folder=input_folder)

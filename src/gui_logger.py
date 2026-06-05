@@ -148,3 +148,29 @@ class LoggerWindow(QWidget):
 
         self.allow_close = True
         self.close()
+
+    def initial_print(self):
+
+        self.print()
+        self.print()
+        self.print()
+        self.print()
+        self.print()
+        self.print("                                                                                                                                                                   ")
+        self.print("                                      ###    ##       ##     ##        #######  ##  ##       ######                                                                ")
+        self.print("                                     ## ##   ##       ###   ###        ##       ##  ##       ##                                                                    ")
+        self.print("                                    ##   ##  ##       #### ####        ######   ##  ##       ######                                                                ")
+        self.print("                                    #######  ##       ## ### ##        ##       ##  ##       ##                                                                    ")
+        self.print("                                    ##   ##  #######  ##  #  ##        ##       ##  #######  ######                                                                ")
+        self.print("                                                                                                                                                                   ")
+        self.print("                                                 ######  #######  ##   ##  ##   ##  #######  ######   ########  ######  ######                                     ")
+        self.print("                                                 ##      ##   ##  ###  ##  ##   ##  ##       ##   ##     ##     ##      ##   ##                                    ")
+        self.print("                                                 ##      ##   ##  #### ##  ##   ##  ######   ######      ##     ######  ######                                     ")
+        self.print("                                                 ##      ##   ##  ## ####   ## ##   ##       ##   ##     ##     ##      ##   ##                                    ")
+        self.print("                                                 ######  #######  ##  ###    ###    #######  ##   ##     ##     ######  ##   ##                                    ")
+        self.print("                                                                                                                                                                   ")
+        self.print()
+        self.print()
+        self.print()
+        self.print()
+        self.print()

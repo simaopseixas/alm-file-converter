@@ -6,7 +6,6 @@ from PySide6.QtWidgets import QApplication
 from gui_converter import ConverterWidget
 from gui_logger import LoggerWindow
 
-
 if __name__ == "__main__":
 
     app = QApplication(sys.argv)
@@ -18,28 +17,11 @@ if __name__ == "__main__":
     # Initialize the logger
     logger = LoggerWindow()
     logger.setWindowIcon(QIcon(str(icon_path)))
-    logger.resize(1000, 500)
+    logger.resize(1200, 600)
     logger.show()
 
-    # logger.print("=======================================================================================================================================")
-    # logger.print("                                                         ALM File Converter                                                            ")
-    # logger.print("=======================================================================================================================================")
-
-    logger.print("=======================================================================================================================================")
-    logger.print("                                                                                                                                       ")
-    logger.print("                        ###    ##       ##     ##        #######  ##  ##       ######                                                  ")
-    logger.print("                       ## ##   ##       ###   ###        ##       ##  ##       ##                                                      ")
-    logger.print("                      ##   ##  ##       #### ####        ######   ##  ##       ######                                                  ")
-    logger.print("                      #######  ##       ## ### ##        ##       ##  ##       ##                                                      ")
-    logger.print("                      ##   ##  #######  ##  #  ##        ##       ##  #######  ######                                                  ")
-    logger.print("                                                                                                                                       ")
-    logger.print("                                    ######  #######  ##   ##  ##   ##  #######  ######   #######  ######  ######                       ")
-    logger.print("                                    ##      ##   ##  ###  ##  ##   ##  ##       ##   ##    ##     ##      ##   ##                      ")
-    logger.print("                                    ##      ##   ##  #### ##  ##   ##  ######   ######     ##     ######  ######                       ")
-    logger.print("                                    ##      ##   ##  ## ####   ## ##   ##       ##   ##    ##     ##      ##   ##                      ")
-    logger.print("                                    ######  #######  ##  ###    ###    #######  ##   ##    ##     ######  ##   ##                      ")
-    logger.print("                                                                                                                                       ")
-    logger.print("=======================================================================================================================================")
+    # Initial print in the logger
+    logger.initial_print()
 
     # Initialize the main window
     window = ConverterWidget(logger)
