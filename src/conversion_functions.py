@@ -291,7 +291,7 @@ class file_reading_functions:
 
     #--------------------------------------------------------------------------
 
-    def read_zarrs_as_dask(file_path):
+    def read_ome_zarr_as_dask(file_path):
         """
         Opens an OME-NGFF Zarr stored in a .zarr or .ome.zarr folder.
         Then converts it to a dask array and appends it to a dictionary with the image series
@@ -398,6 +398,7 @@ class file_reading_functions:
             "voxel_size_metadata": voxel_size_metadata,
             "time_metadata": time_metadata,
             "position_metadata": position_metadata,
+            "preserve_source_chunks": True,
         }]
 
         return image_series
@@ -1165,7 +1166,6 @@ class file_reading_functions:
 
             #------------------------------------------------------
             # Voxel size
-
             voxel_sizes = ics_img.physical_pixel_sizes
 
             voxel_size_metadata = {
@@ -1176,12 +1176,10 @@ class file_reading_functions:
 
             #------------------------------------------------------
             # Time Frame
-
             time_metadata = {"t": ics_img.time_interval if ics_img.time_interval else None}
 
             #------------------------------------------------------
             # Position Metadata
-
             position_metadata = {
                 "x": None,
                 "y": None,
@@ -1354,6 +1352,12 @@ class writing_functions:
                 },
                 name="image")
 
+            # If the input is an OME-NGFF Zarr, preserve the original chunks
+            pyramid_chunks = None
+            if series.get("preserve_source_chunks", False):
+                pyramid_chunks = dict(zip(ngff_image.dims, img_array.chunksize))
+
+
             # Create the multiscales for pyramids
             multiscales = nz.to_multiscales(
                 ngff_image,
@@ -1365,6 +1369,7 @@ class writing_functions:
                     {"z": 1, "y": 32, "x": 32},
                 ],
                 method=nz.Methods.DASK_IMAGE_NEAREST,
+                chunks=pyramid_chunks,
                 cache=False,)
             
             # Write the OME-Zarr file

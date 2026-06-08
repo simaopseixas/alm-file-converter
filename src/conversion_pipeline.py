@@ -638,10 +638,10 @@ class file_conversion:
         READER_FUNCTIONS = {
             ".ome.tif": file_reading_functions.read_tifs_as_dask,
             ".ome.tiff": file_reading_functions.read_tifs_as_dask,
-            ".ome.zarr": file_reading_functions.read_zarrs_as_dask,
+            ".ome.zarr": file_reading_functions.read_ome_zarr_as_dask,
             ".ims": file_reading_functions.read_ims_as_dask,
             ".lif": file_reading_functions.read_lif_as_dask,
-            ".zarr": file_reading_functions.read_zarrs_as_dask,
+            ".zarr": file_reading_functions.read_ome_zarr_as_dask,
             ".tif": file_reading_functions.read_tifs_as_dask,
             ".tiff": file_reading_functions.read_tifs_as_dask,
             ".nd2": file_reading_functions.read_nd2_as_dask,

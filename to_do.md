@@ -1,5 +1,7 @@
 # TO-DO
 
+- See why the main window is not being hidden
+
 - Add .czi reading file format
 
 - Preserve positional metadata reading when available
