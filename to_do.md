@@ -2,15 +2,11 @@
 
 - Add .ics format support
 
-- Preserve time-spacing when available
-    reamining
-        .ims (I WILL NEED A TIME FRAME FILE)
-
 - Preserve positional metadata reading when available
     - [X] lif
     - [X] ome.zarr
     - [X] zvi
-    - [] nd2
+    - [X] nd2
     - [X] lif
     - [X] ims
     - [X] tif
@@ -27,6 +23,9 @@
      
 ### Future
 
+- Preserve time-spacing when available
+    reamining
+        .ims (I WILL NEED A TIME FRAME FILE)
 - ? maybe add the available pyramids of .ims datasets to the reading and writing protocols
 - Add significant bit-depth metadata (important for the case of 12 bit data)
 

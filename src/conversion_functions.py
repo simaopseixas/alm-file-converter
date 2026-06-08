@@ -878,7 +878,7 @@ class file_reading_functions:
                         break
 
             #------------------------------------------------------
-            # Position Metadata (STILL NEEDS TO BE IMPLEMENTED)
+            # Position Metadata
 
             position_metadata = {
                 "x": None,
@@ -897,6 +897,41 @@ class file_reading_functions:
                 },
             }
 
+            # use the first position when the .nd2 contains only one image series
+            position_index = series_index if series_index is not None else 0
+            sequence_index = None
+
+            # find the first frame that belongs to the requested position
+            for frame_index, loop_index in enumerate(nd2_file.loop_indices):
+                frame_position_index = loop_index.get("P", loop_index.get("V", 0))
+
+                if frame_position_index == position_index:
+                    sequence_index = frame_index
+                    break
+
+            # read the positional metadata from the selected frame
+            if sequence_index is not None:
+                frame_metadata = nd2_file.frame_metadata(sequence_index)
+                channels = getattr(frame_metadata, "channels", [])
+
+                # stage positions are shared between channels
+                # use the first available channel
+                if channels:
+                    position = getattr(channels[0], "position", None)
+                    stage_position = getattr(position, "stagePositionUm", None)
+
+                    # no need for conversion, since .nd2 positions are already in micrometers
+                    if stage_position is not None:
+                        position_metadata["x"] = float(stage_position.x)
+                        position_metadata["y"] = float(stage_position.y)
+                        position_metadata["z"] = float(stage_position.z)
+
+                        position_metadata["extent_min"] = {
+                            "x": position_metadata["x"],
+                            "y": position_metadata["y"],
+                            "z": position_metadata["z"],
+                        }
+
             return voxel_size_metadata, time_metadata, position_metadata
         
 
@@ -908,9 +943,6 @@ class file_reading_functions:
 
         # Get the axes
         img_axes = "".join(nd2_file.sizes.keys()).upper()
-
-        # Get metadata
-        voxel_size_metadata, time_metadata, position_metadata = get_nd2_metadata(nd2_file)
 
         # Detect ND2 position/view axis
         position_axis_name = None
@@ -932,6 +964,9 @@ class file_reading_functions:
 
             for p in range(n_positions):
 
+                # Get the series metadata
+                voxel_size_metadata, time_metadata, position_metadata = get_nd2_metadata(nd2_file, series_index=p)
+
                 image_array = dask.array.take(img_array, p, axis=position_axis)
                 image_series.append({
                     "array": image_array,
@@ -947,6 +982,10 @@ class file_reading_functions:
 
         # If there is only one series
         else:
+            
+            # Get the single series metadata
+            voxel_size_metadata, time_metadata, position_metadata = get_nd2_metadata(nd2_file, series_index=0)
+
             image_series.append({
                 "array": img_array,
                 "axes": img_axes,
