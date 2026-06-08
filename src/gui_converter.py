@@ -98,7 +98,7 @@ class ConversionWorker(QObject):
             if self.conversion_type == "single_file":
                 file_conversion.single_file_conversion(self.output_file_format, self.input_file_path, logger=logger)
 
-            # single OME-Zarr/Zarr file conversion
+            # single OME-NGFF Zarr file conversion
             elif self.conversion_type == "single_zarr":
                 file_conversion.single_omezarr_conversion(self.output_file_format, self.input_file_path, logger=logger)
 
@@ -274,7 +274,7 @@ class ConverterWidget(QWidget):
     
     def run_single_omezarr_conversion(self):
         """
-        Function that handles the conversion of a single OME-Zarr/Zarr file inside the GUI
+        Function that handles the conversion of a single OME-NGFF Zarr file inside the GUI
         """
 
         # Verify the user choice for the output file
@@ -404,7 +404,7 @@ class ConverterWidget(QWidget):
         self.select_file_button.clicked.connect(self.run_single_file_conversion)
 
         # Single Zarr File Button
-        self.select_zarr_button = QPushButton("Select Input OME-Zarr/Zarr File")
+        self.select_zarr_button = QPushButton("Select Input OME-NGFF Zarr File")
         self.select_zarr_button.setFixedHeight(34)
             # Wire the function
         self.select_zarr_button.clicked.connect(self.run_single_omezarr_conversion)

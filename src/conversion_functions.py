@@ -293,7 +293,7 @@ class file_reading_functions:
 
     def read_zarrs_as_dask(file_path):
         """
-        Opens a .zarr or an .ome.zarr as a zarr array in reading.
+        Opens an OME-NGFF Zarr stored in a .zarr or .ome.zarr folder.
         Then converts it to a dask array and appends it to a dictionary with the image series
         """
 
@@ -301,10 +301,34 @@ class file_reading_functions:
             """
             Helper function that gets the voxel size and the time frame metadata
             """
+
+            def position_to_micrometers(position, unit):
+                """
+                Function that converts a zarr position to micrometers
+                """
+                if position is None or unit is None:
+                    return None
+
+                unit_to_micrometer = {
+                    "meter": 1_000_000,
+                    "centimeter": 10_000,
+                    "millimeter": 1_000,
+                    "micrometer": 1,
+                    "nanometer": 0.001,
+                    "angstrom": 0.0001,
+                }
+
+                unit_factor = unit_to_micrometer.get(unit)
+
+                if unit_factor is None:
+                    return None
+
+                return float(position) * unit_factor
             
             # Get the scale dictionary from the data
             scale = ngff_image.scale or {}
 
+            #-----------------------------------------------
             # Get the voxel size
             voxel_size_metadata = {
                 "z": scale.get("z", None),
@@ -312,19 +336,32 @@ class file_reading_functions:
                 "x": scale.get("x", None),
             }
 
+            #-----------------------------------------------
             # Get the time frame
             time_metadata = {"t": scale.get("t", None)}
 
-            # Get the position metadata (STILL NEEDS TO BE ADDED - TEMPORARY FIX WITH "NONEs")
+            #-----------------------------------------------
+            # Get the position metadata
+
+            # get the spatial translation and axis units
+            translation = ngff_image.translation or {}
+            axes_units = ngff_image.axes_units or {}
+
+            # get the positions
+            position_x = position_to_micrometers(translation.get("x"), axes_units.get("x"))
+            position_y = position_to_micrometers(translation.get("y"), axes_units.get("y"))
+            position_z = position_to_micrometers(translation.get("z"), axes_units.get("z"))
+
+            # append the positions to the dictionary
             position_metadata = {
-                "x": None,
-                "y": None,
-                "z": None,
+                "x": position_x,
+                "y": position_y,
+                "z": position_z,
                 "unit": "micrometer",
                 "extent_min": {
-                    "x": None,
-                    "y": None,
-                    "z": None,
+                    "x": position_x,
+                    "y": position_y,
+                    "z": position_z,
                 },
                 "extent_max": {
                     "x": None,
@@ -332,6 +369,7 @@ class file_reading_functions:
                     "z": None,
                 },
             }
+
 
             return voxel_size_metadata, time_metadata, position_metadata
         
