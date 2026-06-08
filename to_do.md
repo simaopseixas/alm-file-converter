@@ -9,7 +9,7 @@
 - Preserve positional metadata reading when available
     - [X] lif
     - [] zarrs
-    - [] zvi
+    - [X] zvi
     - [] nd2
     - [X] lif
     - [X] ims

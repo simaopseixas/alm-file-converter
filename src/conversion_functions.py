@@ -937,6 +937,30 @@ class file_reading_functions:
             Helper function that gets the voxel size and time frame metadata
             """
 
+            def position_to_micrometers(position, unit):
+                """
+                Function that converts the position from the zvi to micrometers
+                """
+
+                if position is None or unit is None:
+                    return None
+
+                unit_to_micrometer = {
+                    "m": 1_000_000,
+                    "cm": 10_000,
+                    "mm": 1_000,
+                    "µm": 1,
+                    "nm": 0.001,
+                }
+
+                unit_factor = unit_to_micrometer.get(unit.value)
+
+                if unit_factor is None:
+                    return None
+
+                return float(position) * unit_factor
+
+            #-------------------------------------------------------------
             # Get voxel size metadata, if accessible through BioIO
             voxel_sizes = zvi_img.physical_pixel_sizes
 
@@ -946,12 +970,13 @@ class file_reading_functions:
                 "x": voxel_sizes.X
             }
 
+            #-------------------------------------------------------------
             # Get time metadata, if accessible through BioIO
-            time_metadata = {
-                "t": zvi_img.time_interval if zvi_img.time_interval else None,
-            }
+            time_metadata = {"t": zvi_img.time_interval if zvi_img.time_interval else None}
 
-            # Get positional metadata (STILL NEEDS TO BE IMPLEMENTED)
+            #-------------------------------------------------------------
+            # Get positional metadata
+
             position_metadata = {
                 "x": None,
                 "y": None,
@@ -968,6 +993,57 @@ class file_reading_functions:
                     "z": None,
                 },
             }
+
+            # Access the OME metadata
+            ome_metadata = zvi_img.ome_metadata
+            scene_index = zvi_img.current_scene_index
+
+            if scene_index < len(ome_metadata.images):
+                pixels = ome_metadata.images[scene_index].pixels
+                plane_positions = []
+
+                # Get the plane positions for each available plane
+                for plane in pixels.planes:
+                    plane_positions.append({
+                        "x": position_to_micrometers(
+                            plane.position_x,
+                            plane.position_x_unit,
+                        ),
+                        "y": position_to_micrometers(
+                            plane.position_y,
+                            plane.position_y_unit,
+                        ),
+                        "z": position_to_micrometers(
+                            plane.position_z,
+                            plane.position_z_unit,
+                        ),
+                        "unit": "micrometer",
+                    })
+
+                # Check if the planes actually have positions
+                has_plane_positions = False
+
+                for plane_position in plane_positions:
+                    if (
+                        plane_position.get("x") is not None
+                        or plane_position.get("y") is not None
+                        or plane_position.get("z") is not None
+                    ):
+                        has_plane_positions = True
+                        break
+
+                # If there are plane positions, append them to the dictionary
+                if has_plane_positions:
+                    position_metadata["plane_positions"] = plane_positions
+                    position_metadata["x"] = plane_positions[0]["x"]
+                    position_metadata["y"] = plane_positions[0]["y"]
+                    position_metadata["z"] = plane_positions[0]["z"]
+
+                    position_metadata["extent_min"] = {
+                        "x": position_metadata["x"],
+                        "y": position_metadata["y"],
+                        "z": position_metadata["z"],
+                    }
 
             return voxel_size_metadata, time_metadata, position_metadata
 
