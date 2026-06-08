@@ -1215,12 +1215,19 @@ class writing_functions:
             extent_min = position_metadata.get("extent_min", {})
             # Get the X, Y, Z max. extents
             extent_max = position_metadata.get("extent_max", {})
+            # Get any available plane positions
+            plane_positions = position_metadata.get("plane_positions", [])
+            plane_index = 0
 
-            position_x = position_metadata["x"]
-            position_y = position_metadata["y"]
-            z_min = extent_min["z"]
-            z_max = extent_max["z"]
-            z_step = voxel_size_metadata["z"]
+            # Get any available volume positions
+            position_x = position_metadata.get("x")
+            position_y = position_metadata.get("y")
+            position_z = position_metadata.get("z")
+
+            # Get any available XYZ extents
+            z_min = extent_min.get("z")
+            z_max = extent_max.get("z")
+            z_step = voxel_size_metadata.get("z")
 
             # Calculate the zstep if was not read
             if z_step is None:
@@ -1234,31 +1241,51 @@ class writing_functions:
 
                         plane = {}
 
-                        if position_x is not None:
-                            plane["PositionX"] = position_x
+                        # get the plane position if available
+                        if plane_index < len(plane_positions):
+                            plane_position = plane_positions[plane_index]
+                        else:
+                            plane_position = {}
+
+                        plane_x = plane_position.get("x")
+                        plane_y = plane_position.get("y")
+                        plane_z = plane_position.get("z")
+
+                        if plane_x is None:
+                            plane_x = position_x
+                        if plane_y is None:
+                            plane_y = position_y
+                        
+                        # either get the plane position or calculate it
+                        if plane_z is None:
+                            if z_min is not None and z_step is not None:
+                                plane_z = z_min + z * z_step
+                            elif position_z is not None and z_step is not None:
+                                plane_z = position_z + z * z_step
+                            else:
+                                plane_z = position_z
+
+                        # finally, append the value to the metadata
+                        if plane_x is not None:
+                            plane["PositionX"] = plane_x
                             plane["PositionXUnit"] = "µm"
 
-                        if position_y is not None:
-                            plane["PositionY"] = position_y
+                        if plane_y is not None:
+                            plane["PositionY"] = plane_y
                             plane["PositionYUnit"] = "µm"
 
-                        if z_min is not None and z_step is not None:
-                            plane["PositionZ"] = z_min + z * z_step
-                            plane["PositionZUnit"] = "µm"
-
-                        elif position_metadata.get("z") is not None:
-                            plane["PositionZ"] = position_metadata["z"]
+                        if plane_z is not None:
+                            plane["PositionZ"] = plane_z
                             plane["PositionZUnit"] = "µm"
 
                         plane_metadata.append(plane)
+                        
+                        # go to the next plane
+                        plane_index += 1
 
             # Append the plane metadata to the total metadata
             if plane_metadata:
                 ome_metadata["Plane"] = plane_metadata
-
-            # Calculate the planes
-            if position_metadata["z"] is not None and z_step is not None:
-                plane["PositionZ"] = position_metadata["z"] + z * z_step
 
             return ome_metadata
 
