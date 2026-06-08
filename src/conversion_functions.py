@@ -1,7 +1,7 @@
 """
 This file has various functions to read data from each file format either as a dask array or as a numpy array in the case of .zvi.
 Currently supported reading formats:
-- .ims, .lif, .nd2, .zvi, .tif, .tiff, .ome.tif, .ome.tiff, .ome.zarr
+- .ics, .ims, .lif, .nd2, .zvi, .tif, .tiff, .ome.tif, .ome.tiff, .ome.zarr
 
 It also has various functions to write data with various file formats.
 Currently supported writing formats:
@@ -42,7 +42,7 @@ class file_reading_functions:
 
         def get_tif_metadata(tif, tif_series, series_index):
             """
-            Get voxel size metadata and time frame from OME or Imagej standard TIFF metadata.
+            Get voxel size, time frame and positional metadata from OME or Imagej standard TIFF metadata.
             """
 
             voxel_size_metadata = {
@@ -299,7 +299,7 @@ class file_reading_functions:
 
         def get_zarr_metadata(ngff_image):
             """
-            Helper function that gets the voxel size and the time frame metadata
+            Helper function that gets the voxel size, time frame and positional metadata
             """
 
             def position_to_micrometers(position, unit):
@@ -441,7 +441,7 @@ class file_reading_functions:
         
         def get_ims_metadata(ims_file, img_array):
             """
-            Helper function that gets the voxel size and the time frame metadata
+            Helper function that gets the voxel size, time frame and positional metadata
             """
 
             #-----------------------------------------------------------------------------
@@ -830,7 +830,7 @@ class file_reading_functions:
 
         def get_nd2_metadata(nd2_file, series_index=None):
             """
-            Helper function that gets the voxel size and time frame
+            Helper function that gets the voxel size, time frame and positional metadata
             """
 
             #------------------------------------------------------
@@ -1011,7 +1011,7 @@ class file_reading_functions:
 
         def get_zvi_metadata(zvi_img):
             """
-            Helper function that gets the voxel size and time frame metadata
+            Helper function that gets the voxel size, time frame and positional metadata
             """
 
             def position_to_micrometers(position, unit):
@@ -1148,6 +1148,77 @@ class file_reading_functions:
             "position_metadata": position_metadata,
         }]
 
+
+        return image_series
+    
+    #--------------------------------------------------------------------------
+
+    def read_ics_as_dask(file_path):
+        """
+        Opens an ICS2 .ics file as a dask array and returns a list of image series dictionaries
+        """
+
+        def get_ics_metadata(ics_img):
+            """
+            Gets the voxel size and time frame metadata
+            """
+
+            #------------------------------------------------------
+            # Voxel size
+
+            voxel_sizes = ics_img.physical_pixel_sizes
+
+            voxel_size_metadata = {
+                "z": voxel_sizes.Z,
+                "y": voxel_sizes.Y,
+                "x": voxel_sizes.X,
+            }
+
+            #------------------------------------------------------
+            # Time Frame
+
+            time_metadata = {"t": ics_img.time_interval if ics_img.time_interval else None}
+
+            #------------------------------------------------------
+            # Position Metadata
+
+            position_metadata = {
+                "x": None,
+                "y": None,
+                "z": None,
+                "unit": "micrometer",
+                "extent_min": {
+                    "x": None,
+                    "y": None,
+                    "z": None,
+                },
+                "extent_max": {
+                    "x": None,
+                    "y": None,
+                    "z": None,
+                },
+            }
+
+            return voxel_size_metadata, time_metadata, position_metadata
+    
+
+        # Open the ICS2 file using BioFormats
+        ics_img = BioImage(file_path, reader=bioio_bioformats.Reader)
+
+        # Lazily access the image as a dask array
+        img_array = ics_img.get_image_dask_data("TCZYX")
+
+        # Get the metadata
+        voxel_size_metadata, time_metadata, position_metadata = get_ics_metadata(ics_img)
+
+        # Construct the dictionary
+        image_series = [{
+            "array": img_array,
+            "axes": "TCZYX",
+            "voxel_size_metadata": voxel_size_metadata,
+            "time_metadata": time_metadata,
+            "position_metadata": position_metadata,
+        }]
 
         return image_series
     

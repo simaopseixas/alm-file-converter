@@ -1,6 +1,6 @@
 # TO-DO
 
-- Add .ics format support
+- Add .czi reading file format
 
 - Preserve positional metadata reading when available
     - [X] lif
