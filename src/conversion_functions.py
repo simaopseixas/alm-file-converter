@@ -1286,7 +1286,13 @@ class writing_functions:
             # Create the multiscales for pyramids
             multiscales = nz.to_multiscales(
                 ngff_image,
-                scale_factors=[2, 4],
+                scale_factors=[
+                    {"z": 1, "y": 2, "x": 2},
+                    {"z": 1, "y": 4, "x": 4},
+                    {"z": 1, "y": 8, "x": 8},
+                    {"z": 1, "y": 16, "x": 16},
+                    {"z": 1, "y": 32, "x": 32},
+                ],
                 method=nz.Methods.DASK_IMAGE_NEAREST,
                 cache=False,)
             
