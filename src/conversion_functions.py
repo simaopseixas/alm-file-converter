@@ -1358,27 +1358,59 @@ class writing_functions:
                 pyramid_chunks = dict(zip(ngff_image.dims, img_array.chunksize))
 
             # Create the multiscales for pyramids
+            # This is not used for actual pyramid generation but rather for their metadata
+
+            # create the downsampling factor lists
+            pyramid_factors = [factor for factor in [2, 4, 8, 16]
+                if img_array.shape[-2] // factor >= 1
+                and img_array.shape[-1] // factor >= 1
+            ]
+
+            scale_factors = [{"z": 1, "y": factor, "x": factor} for factor in pyramid_factors]
+
+            # generate the multiscales object used for metadata
             multiscales = nz.to_multiscales(
                 ngff_image,
-                scale_factors=[
-                    {"z": 1, "y": 2, "x": 2},
-                    {"z": 1, "y": 4, "x": 4},
-                    {"z": 1, "y": 8, "x": 8},
-                    {"z": 1, "y": 16, "x": 16},
-                    {"z": 1, "y": 32, "x": 32},
-                ],
+                scale_factors=scale_factors,
                 method=nz.Methods.DASK_IMAGE_NEAREST,
                 chunks=pyramid_chunks,
                 cache=False,)
             
+            # Replace the way ngff-zarr does pyramids with direct nearest-neighbor slices
+            base_array = multiscales.images[0].data
+
+            # Generate the pyramids
+            for level_index, factor in enumerate(pyramid_factors, start=1):
+
+                target_image = multiscales.images[level_index]
+                target_chunks = target_image.data.chunksize
+                target_y, target_x = target_image.data.shape[-2:]
+
+                sliced_array = base_array[..., ::factor, ::factor]
+                sliced_array = sliced_array[..., :target_y, :target_x]
+
+                target_image.data = sliced_array.rechunk(target_chunks)
+
+            # Prevent the writer from regenerating pyramids incrementally
+            multiscales = nz.NgffMultiscales(images=multiscales.images, metadata=multiscales.metadata)
+                
             # Write the OME-Zarr file
-            nz.to_ngff_zarr(
-                str(series_output_path),
-                multiscales,
-                version="0.5",
-                overwrite=True,
-                compressor=None,
-            )
+            original_memory_target = nz.config.memory_target
+            try:
+                # force every pyramid level through the normal lazy dask writer
+                required_memory_target = max(nz.memory_usage(image) for image in multiscales.images) + 1
+
+                nz.config.memory_target = max(original_memory_target, required_memory_target)
+
+                nz.to_ngff_zarr(
+                    str(series_output_path),
+                    multiscales,
+                    version="0.4",
+                    overwrite=True,
+                )
+
+            finally:
+                nz.config.memory_target = original_memory_target
 
         # Get the output path
         output_path = Path(output_path)
