@@ -1555,17 +1555,31 @@ class writing_functions:
 
             return ome_metadata
 
-        def tczyx_plane_access(array, T, C, Z):
+        def tczyx_plane_access(array, T, C, Z, memory_budget_mb=512):
             """
-            Helper function that accesses (Y,X) data given (T,C), computing the Z-stack
+            Helper function that accesses (Y,X).
+            It chooses if its better to compute the ZYX volume or if its better to compute plane-by-plane
             """
 
+            # Calculate the max memory that we allow the volume to occupy in RAM 
+            Y, X = array.shape[-2:]
+            plane_bytes = Y * X * array.dtype.itemsize
+            memory_budget_bytes = memory_budget_mb * 1024**2
+
+            # Compute the total memory of the ZYX volume
+            planes_per_slab = max(1, memory_budget_bytes // plane_bytes)
+            planes_per_slab = min(Z, planes_per_slab)
+
+            # Yield either the ZYX volume or the YX plane-by-plane
             for t in range(T):
                 for c in range(C):
-                    z_stack = array[t, c, :, :, :].compute()
+                    for z_start in range(0, Z, planes_per_slab):
+                        z_stop = min(z_start + planes_per_slab, Z)
 
-                    for z in range(Z):
-                        yield np.ascontiguousarray(z_stack[z, :, :])
+                        z_slab = array[t, c, z_start:z_stop, :, :].compute()
+
+                        for plane in z_slab:
+                            yield np.ascontiguousarray(plane)
 
         # Get the output path
         output_path = Path(output_path)
@@ -1614,17 +1628,31 @@ class writing_functions:
         ImageJ hyperstacks can also only handle 5D data. For this reason, multi-positions are written as different files.
         """
 
-        def tzcyx_plane_access(array, T, C, Z):
+        def tzcyx_plane_access(array, T, C, Z, memory_budget_mb=512):
             """
-            Helper function that accesses (Y,X) data given (T,Z), computing the C-Stack
+            Helper function that accesses YX planes in TZCYX order.
+            It chooses whether to compute the complete CZYX volume or smaller Z-slabs.
             """
 
+            # Calculate the maximum memory that a CZYX slab may occupy in RAM
+            Y, X = array.shape[-2:]
+            z_plane_bytes = C * Y * X * array.dtype.itemsize
+            memory_budget_bytes = memory_budget_mb * 1024**2
+
+            # Calculate how many Z planes across all channels fit within the budget
+            planes_per_slab = max(1, memory_budget_bytes // z_plane_bytes)
+            planes_per_slab = min(Z, planes_per_slab)
+
+            # Compute and yield the image planes in TZCYX order
             for t in range(T):
-                for z in range(Z):
-                    c_stack = array[t, :, z, :, :].compute()
+                for z_start in range(0, Z, planes_per_slab):
+                    z_stop = min(z_start + planes_per_slab, Z)
 
-                    for c in range(C):
-                        yield np.ascontiguousarray(c_stack[c, :, :])
+                    z_slab = array[t, :, z_start:z_stop, :, :].compute()
+
+                    for slab_z in range(z_stop - z_start):
+                        for c in range(C):
+                            yield np.ascontiguousarray(z_slab[c, slab_z, :, :])
 
         def get_fiji_metadata(T, C, Z, voxel_size_metadata, time_metadata, position_metadata):
             """
