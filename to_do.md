@@ -1,9 +1,5 @@
 # TO-DO
 
-- correct the ome zarr write to use v0.4 again. The v0.5 cannot be naturally opened in Fiji
-
-- correct the error of when a conversion is happening and I open the logger, the main window also appears
-
 - Add .czi reading file format
      
 ### Future

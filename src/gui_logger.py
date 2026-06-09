@@ -87,8 +87,12 @@ class LoggerWindow(QWidget):
 
         super().changeEvent(event)
 
-        # If there is no logger do nothing
+        # If there is no main window do nothing
         if self.main_window is None:
+            return
+        
+        # Keep the main window hidden while a conversion is running
+        if self.main_window.conversion_running:
             return
         
         # Only react to window minimize / restore state changes

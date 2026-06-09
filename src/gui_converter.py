@@ -173,6 +173,10 @@ class ConverterWidget(QWidget):
         if self.logger is None:
             return
         
+        # If there is a conversion running, do nothing
+        if self.conversion_running:
+            return
+        
         # Only react to window minimize / restore state changes
         if event.type() != QEvent.Type.WindowStateChange:
             return
