@@ -1357,7 +1357,6 @@ class writing_functions:
             if series.get("preserve_source_chunks", False):
                 pyramid_chunks = dict(zip(ngff_image.dims, img_array.chunksize))
 
-
             # Create the multiscales for pyramids
             multiscales = nz.to_multiscales(
                 ngff_image,
@@ -1376,7 +1375,7 @@ class writing_functions:
             nz.to_ngff_zarr(
                 str(series_output_path),
                 multiscales,
-                version="0.4",
+                version="0.5",
                 overwrite=True,
                 compressor=None,
             )

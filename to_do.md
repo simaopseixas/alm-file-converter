@@ -1,27 +1,10 @@
 # TO-DO
 
-- See why the main window is not being hidden
+- correct the ome zarr write to use v0.4 again. The v0.5 cannot be naturally opened in Fiji
+
+- correct the error of when a conversion is happening and I open the logger, the main window also appears
 
 - Add .czi reading file format
-
-- Preserve positional metadata reading when available
-    - [X] lif
-    - [X] ome.zarr
-    - [X] zvi
-    - [X] nd2
-    - [X] lif
-    - [X] ims
-    - [X] tif
-    - [X] tiff
-    - [X] ome.tif
-    - [X] ome.tiff
-
-- Write positional metadata onto the available file formats:
-    - [X] ome.zarr
-    - [X] tif
-    - [X] tiff
-    - [X] ome.tif
-    - [X] ome.tiff
      
 ### Future
 

@@ -71,7 +71,7 @@ class file_conversion:
         # Report metrics
         successful_files = 0
         failed_files = 0
-        failed_files_report = []
+        report_file = None
 
         for file_index, input_file_path in enumerate(input_file_paths, start=1):
 
@@ -136,12 +136,21 @@ class file_conversion:
             # Final prints of the file and failed status for the report
             if conversion_failed:
 
-                # Append the file and the error to the report dictionary
-                failed_files_report.append({
-                    "file": input_file_path.name,
-                    "error": error_traceback,
-                })
                 failed_files += 1
+
+                # Create the report when the first failure occurs
+                if report_file is None:
+                    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+                    report_file = output_folder / f"conversion_report_{timestamp}.txt"
+
+                    with open(report_file, "w", encoding="utf-8") as report:
+                        report.write("Batch Conversion Report\n")
+                        report.write("=======================\n\n")
+
+                # Append the current error
+                with open(report_file, "a", encoding="utf-8") as report:
+                    report.write(f"File: {input_file_path.name}\n")
+                    report.write(f"Error: {error_traceback}\n\n")
 
                 logger.print(f"Failed to convert file: {input_file_path.name}")
                 logger.print(f"Error: {error_message}")
@@ -164,15 +173,17 @@ class file_conversion:
                 else:
                     logger.print(f"Saved File: {output_file.name}")
 
-        # Create the final report
-        file_conversion.create_report(
-            output_folder,
-            n_files,
-            successful_files,
-            failed_files,
-            failed_files_report,
-            logger=logger,
-        )
+        # Finalize the error report if it exists
+        if report_file is not None:
+            with open(report_file, "a", encoding="utf-8") as report:
+                report.write("Summary\n")
+                report.write("=======\n")
+                report.write(f"Total files: {n_files}\n")
+                report.write(f"Successful files: {successful_files}\n")
+                report.write(f"Failed files: {failed_files}\n")
+
+            logger.print()
+            logger.print(f"Conversion report saved to: {report_file}")
 
         logger.print()
         logger.print("Conversion finished.")
@@ -677,45 +688,7 @@ class file_conversion:
                 return WRITER_FUNCTIONS[output_file_format]
         
         raise ValueError(f"Unsupported output file format: {output_file_format}")
-    
 
-    #--------------------------------------------------------------------------
-
-    
-    def create_report(output_folder, n_files, successful_files, failed_files, failed_file_reports, logger=None):
-        """
-        Creates a report listing the errors for failed files
-        """
-
-        # Give the logger
-        logger = logger or ConsoleLogger()
-
-        # Immediately leave this function if there are no failed files
-        if failed_files == 0:
-            return
-        
-        # Create the report file
-        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        report_file = Path(output_folder) / f"conversion_report_{timestamp}.txt"
-
-        with open(report_file, "w", encoding="utf-8") as report:
-            report.write("Conversion Report\n")
-            report.write("=================\n\n")
-            report.write(f"Total files: {n_files}\n")
-            report.write(f"Successful files: {successful_files}\n")
-            report.write(f"Failed files: {failed_files}\n\n")
-
-            report.write("Failed file details:\n")
-            report.write("--------------------\n")
-
-            for failed_file in failed_file_reports:
-                report.write(f"File: {failed_file['file']}\n")
-                report.write(f"Error: {failed_file['error']}\n\n")
-
-        report_path_to_print = report_file.relative_to(Path(output_folder).parent)
-
-        logger.print()
-        logger.print(f"Conversion report saved to: {report_path_to_print}")
 
     #--------------------------------------------------------------------------
 
