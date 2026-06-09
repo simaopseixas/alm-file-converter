@@ -1558,7 +1558,7 @@ class writing_functions:
         def tczyx_plane_access(array, T, C, Z, memory_budget_mb=512):
             """
             Helper function that accesses (Y,X).
-            It chooses if its better to compute the ZYX volume or if its better to compute plane-by-plane
+            It chooses if its better to compute the ZYX volume or if its better to compute a smaller Z-slab
             """
 
             # Calculate the max memory that we allow the volume to occupy in RAM 
@@ -1631,7 +1631,7 @@ class writing_functions:
         def tzcyx_plane_access(array, T, C, Z, memory_budget_mb=512):
             """
             Helper function that accesses YX planes in TZCYX order.
-            It chooses whether to compute the complete CZYX volume or smaller Z-slabs.
+            It chooses if its better to compute the CZYX volume or if its better to compute the smaller CYX block.
             """
 
             # Calculate the maximum memory that a CZYX slab may occupy in RAM
