@@ -1,5 +1,17 @@
 # TO-DO
 
+Things that were found in testing:
+
+- All ICS-to-OME-Zarr conversions fail.
+- Some OME-Zarr pyramid levels crop image edges.
+- OME-Zarr fabricates unknown metadata as 1.0 scales and (0,0,0) positions.
+- Large conversions provide no progress indication.
+- Failed/interrupted writes can leave large partial outputs.
+
+- Add a compression checkbox
+
+- Maybe add a checkbox for pyramid writing in omezarr writing
+
 - Add .czi reading file format
      
 ### Future
