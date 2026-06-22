@@ -357,7 +357,7 @@ class ConverterWidget(QWidget):
         self.batch_info_label.setCursor(Qt.PointingHandCursor)
         self.batch_info_label.setCursor(Qt.PointingHandCursor)
         self.batch_info_label.mousePressEvent = lambda event: QDesktopServices.openUrl(
-            QUrl("https://github.com/synkss/Microscopy_File_Converter")
+            QUrl("https://github.com/simaopseixas/alm-file-converter")
         )
         self.tooltip_manager.attach_tooltip(
             self.batch_checkbox,
@@ -384,7 +384,7 @@ class ConverterWidget(QWidget):
         self.author_label.setAlignment(Qt.AlignRight)
         self.author_label.setCursor(Qt.PointingHandCursor)
         self.author_label.mousePressEvent = lambda event: QDesktopServices.openUrl(
-            QUrl("https://github.com/synkss")
+            QUrl("https://github.com/simaopseixas")
         )
 
         # Output file format ComboBox

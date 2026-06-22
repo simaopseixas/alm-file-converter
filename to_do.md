@@ -1,5 +1,7 @@
 # TO-DO
 
+- Correct the logger aesthetics to black
+
 Things that were found in testing:
 
 - All ICS-to-OME-Zarr conversions fail.
