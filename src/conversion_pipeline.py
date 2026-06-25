@@ -315,7 +315,7 @@ class file_conversion:
 
     def single_omezarr_conversion(output_file_format, input_file_path=None, logger=None):
         """
-        Performs the conversion algorithm for a single OME-NGFF Zarr file.
+        Performs the conversion algorithm for a single OME-Zarr file.
         From file choice, reading as a dask array and writing as the intended format.
         """
         
@@ -457,7 +457,7 @@ class file_conversion:
     
     def zarr_choice(logger=None):
         """
-        Open a PySide6 dialog to choose a single OME-NGFF Zarr file
+        Open a PySide6 dialog to choose a single OME-Zarr file
         """
 
         # Give the logger
@@ -471,12 +471,12 @@ class file_conversion:
 
             zarr_path = QFileDialog.getExistingDirectory(
                 None,
-                "Select OME-NGFF Zarr folder",
+                "Select OME-Zarr folder",
             )
 
             if not zarr_path:
                 logger.print()
-                logger.print("No OME-NGFF Zarr file selected.")
+                logger.print("No OME-Zarr file selected.")
                 return None
             
             zarr_path = Path(zarr_path)
@@ -487,7 +487,7 @@ class file_conversion:
 
             else:
                 logger.print()
-                logger.print("Selected folder is not an OME-NGFF Zarr.")
+                logger.print("Selected folder is not an OME-Zarr.")
                 logger.print("Please choose another folder.")
 
                 QApplication.processEvents()

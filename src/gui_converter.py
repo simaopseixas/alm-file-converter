@@ -11,7 +11,7 @@ import os
 from pathlib import Path
 from PySide6.QtCore import Qt, QSettings, QTimer, QObject, QEvent, QPoint, QUrl, QThread, Signal, Slot
 from PySide6.QtGui import QIcon, QDesktopServices
-from PySide6.QtWidgets import  QApplication, QCheckBox, QComboBox, QHBoxLayout, QLabel, QPushButton, QSizePolicy, QVBoxLayout, QWidget, QDialog
+from PySide6.QtWidgets import  QApplication, QCheckBox, QComboBox, QHBoxLayout, QLabel, QPushButton, QSizePolicy, QVBoxLayout, QWidget, QDialog, QFrame
 from conversion_pipeline import file_conversion
 
 #############################################################
@@ -98,7 +98,7 @@ class ConversionWorker(QObject):
             if self.conversion_type == "single_file":
                 file_conversion.single_file_conversion(self.output_file_format, self.input_file_path, logger=logger)
 
-            # single OME-NGFF Zarr file conversion
+            # single OME-Zarr file conversion
             elif self.conversion_type == "single_zarr":
                 file_conversion.single_omezarr_conversion(self.output_file_format, self.input_file_path, logger=logger)
 
@@ -278,7 +278,7 @@ class ConverterWidget(QWidget):
     
     def run_single_omezarr_conversion(self):
         """
-        Function that handles the conversion of a single OME-NGFF Zarr file inside the GUI
+        Function that handles the conversion of a single OME-Zarr file inside the GUI
         """
 
         # Verify the user choice for the output file
@@ -368,15 +368,36 @@ class ConverterWidget(QWidget):
             self.batch_info_label,
             "This program has reading support for:\n" \
             "TIF, TIFF, OME-TIF, OME-TIFF, ICS2,\n" \
-            "OME-NGFF Zarr, IMS, LIF, ND2, ZVI.\n" \
+            "OME-Zarr, IMS, LIF, ND2, ZVI.\n" \
             "\n" \
             "To access this project's github for more\n" \
             "information, click this button."
 
         )
 
-        self.convert_label = QLabel()
+        # Separator line
+        separator_line = QFrame()
+        separator_line.setFrameShape(QFrame.HLine)
+        separator_line.setFrameShadow(QFrame.Sunken)
+        separator_line.setObjectName("separatorLine")
 
+        # Checkbox for output compression
+        self.compress_output_checkbox = QCheckBox("Compress output files")
+        # get the last used state
+        last_compression_checkbox_state = self.settings.value("compress_output_enabled", False, type=bool)
+        self.compress_output_checkbox.setChecked(last_compression_checkbox_state)
+        self.compress_output_checkbox.toggled.connect(self.save_compress_output_setting)
+
+
+        # Checkbox for OME-ZARR pyramids creation
+        self.zarr_pyramids_checkbox = QCheckBox("Create pyramids in OME-Zarr output files")
+        last_zarr_pyramids_checkbox_state = self.settings.value("zarr_pyramids_enabled", False, type=bool)
+        self.zarr_pyramids_checkbox.setChecked(last_zarr_pyramids_checkbox_state)
+        self.zarr_pyramids_checkbox.toggled.connect(self.save_zarr_pyramids_setting)
+        self.zarr_pyramids_checkbox.setVisible(False)
+
+        # simple label text
+        self.convert_label = QLabel()
 
         # Create a clickable label
         self.author_label = QLabel("Made by: Simão Seixas, i3S")
@@ -394,6 +415,8 @@ class ConverterWidget(QWidget):
         last_format = self.settings.value("output_file_format", ".ome.tiff", type=str)
         self.format_combobox.setCurrentText(last_format)
         self.format_combobox.currentTextChanged.connect(self.save_format_setting)
+        # connect the checkbox to the update function
+        self.format_combobox.currentTextChanged.connect(self.update_zarr_pyramids_visibility)
 
         # Batch Procesing Button
         self.choose_button = QPushButton()
@@ -408,7 +431,7 @@ class ConverterWidget(QWidget):
         self.select_file_button.clicked.connect(self.run_single_file_conversion)
 
         # Single Zarr File Button
-        self.select_zarr_button = QPushButton("Select Input OME-NGFF Zarr File")
+        self.select_zarr_button = QPushButton("Select Input OME-Zarr File")
         self.select_zarr_button.setFixedHeight(34)
             # Wire the function
         self.select_zarr_button.clicked.connect(self.run_single_omezarr_conversion)
@@ -438,6 +461,9 @@ class ConverterWidget(QWidget):
 
         # Construction of the full UI
         layout.addLayout(batch_row)
+        layout.addWidget(separator_line)
+        layout.addWidget(self.compress_output_checkbox)
+        layout.addWidget(self.zarr_pyramids_checkbox)
         layout.addWidget(self.convert_label, alignment=Qt.AlignLeft)
         layout.addWidget(self.format_combobox)
         layout.addWidget(self.choose_button)
@@ -448,6 +474,7 @@ class ConverterWidget(QWidget):
 
         self.apply_styles()
         self.update_button_text(self.batch_checkbox.isChecked())
+        self.update_zarr_pyramids_visibility(self.format_combobox.currentText())
         
 
     #--------------------------------------------------
@@ -472,6 +499,21 @@ class ConverterWidget(QWidget):
         """
         self.settings.setValue("batch_processing_enabled", checked)
 
+    def save_compress_output_setting(self, checked):
+        """
+        Saves whether output compression is enabled.
+        """
+
+        self.settings.setValue("compress_output_enabled", checked)
+
+
+    def save_zarr_pyramids_setting(self, checked):
+        """
+        Saves whether OME-Zarr pyramid creation is enabled.
+        """
+
+        self.settings.setValue("zarr_pyramids_enabled", checked)
+
     def save_format_setting(self, output_file_format):
         """
         Updates the output file format combo-box value as a setting in the computer
@@ -491,6 +533,24 @@ class ConverterWidget(QWidget):
         self.single_input_widget.setVisible(not batch_enabled)
         self.adjustSize()
         self.setFixedHeight(self.sizeHint().height())
+
+    def update_zarr_pyramids_visibility(self, output_file_format=None):
+        """
+        Shows the OME-Zarr pyramid checkbox only when .ome.zarr is selected as the output file format
+        """
+
+        # get the current file format that was chosen in the checkbox
+        if output_file_format is None:
+            output_file_format = self.format_combobox.currentText()
+
+        # check if the file format corresponds to OME-Zarr
+        is_omezarr = True if output_file_format == ".ome.zarr" else False
+
+        self.zarr_pyramids_checkbox.setVisible(is_omezarr)
+
+        self.adjustSize()
+        self.setFixedHeight(self.sizeHint().height())
+
 
     def apply_styles(self):
         """

@@ -293,7 +293,7 @@ class file_reading_functions:
 
     def read_ome_zarr_as_dask(file_path):
         """
-        Opens an OME-NGFF Zarr stored in a .zarr or .ome.zarr folder.
+        Opens an OME-Zarr stored in a .zarr or .ome.zarr folder.
         Then converts it to a dask array and appends it to a dictionary with the image series
         """
 
@@ -1369,7 +1369,7 @@ class writing_functions:
                 },
                 name="image")
 
-            # If the input is an OME-NGFF Zarr, preserve the original chunks
+            # If the input is an OME-Zarr, preserve the original chunks
             pyramid_chunks = None
             if series.get("preserve_source_chunks", False):
                 pyramid_chunks = dict(zip(ngff_image.dims, img_array.chunksize))
