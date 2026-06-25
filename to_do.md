@@ -8,19 +8,11 @@ Things that were found in testing:
 
 ---------------------------------------------------------------
 
-- Add a compression checkbox
-
-- Maybe add a checkbox for pyramid writing in omezarr writing
+- Add the compression and pyramid behavior to complement the checkboxes
 
 - Add .czi reading file format
      
 ### Future
-
-- Preserve time-spacing when available
-    reamining
-        .ims (I WILL NEED A TIME FRAME FILE)
-- ? maybe add the available pyramids of .ims datasets to the reading and writing protocols
-- Add significant bit-depth metadata (important for the case of 12 bit data)
 
 - Validate the time-frame metadata in all file formats:
     Remaining:
