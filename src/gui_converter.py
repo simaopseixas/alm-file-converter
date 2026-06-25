@@ -446,8 +446,9 @@ class ConverterWidget(QWidget):
         layout.addSpacing(5)
         layout.addWidget(self.author_label, alignment=Qt.AlignRight)
 
-        self.update_button_text(self.batch_checkbox.isChecked())
         self.apply_styles()
+        self.update_button_text(self.batch_checkbox.isChecked())
+        
 
     #--------------------------------------------------
     # Stylistic Functions

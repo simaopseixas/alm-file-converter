@@ -1208,6 +1208,13 @@ class file_reading_functions:
 
         # Lazily access the image as a dask array
         img_array = ics_img.get_image_dask_data("TCZYX")
+        
+        # Get a lazy numpy array to allow zarr pyramid writing
+        img_array = img_array.map_blocks(
+            np.asarray,
+            dtype=img_array.dtype,
+            meta=np.empty((0,), dtype=img_array.dtype),
+        )
 
         # Get the metadata
         voxel_size_metadata, time_metadata, position_metadata = get_ics_metadata(ics_img)
@@ -1219,6 +1226,7 @@ class file_reading_functions:
             "voxel_size_metadata": voxel_size_metadata,
             "time_metadata": time_metadata,
             "position_metadata": position_metadata,
+            "requires_single_threaded_compute": True,
         }]
 
         return image_series
@@ -1336,10 +1344,16 @@ class writing_functions:
             voxel_size_metadata = series["voxel_size_metadata"]
             time_metadata = series["time_metadata"]
             position_metadata = series["position_metadata"]
+            requires_serial = series.get("requires_single_threaded_compute", False)
 
             # Raise an error if the axes are not TCZYX
             if img_axes != "TCZYX":
                 raise ValueError(f"The series must be TCZYX before writing. Got {img_axes}")
+            
+            # if it was an ICS file that was read, write using a single thread
+            if requires_serial:
+                with dask.config.set(scheduler="single-threaded"):
+                    img_array = img_array.persist()
             
             # Create an ngff image
             ngff_image = nz.to_ngff_image(

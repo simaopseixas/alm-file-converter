@@ -1,11 +1,8 @@
 # TO-DO
 
-- Correct the logger aesthetics to black
 
 Things that were found in testing:
 
-- The lazy LIF reader leaks file handles. It generated thousands of unclosed file warnings while reading planes.
-- All ICS-to-OME-Zarr conversions fail.
 - Some OME-Zarr pyramid levels crop image edges.
 - OME-Zarr fabricates unknown metadata as 1.0 scales and (0,0,0) positions.
 - Large conversions provide no progress indication.

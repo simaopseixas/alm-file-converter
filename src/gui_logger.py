@@ -55,6 +55,49 @@ class LoggerWindow(QWidget):
 
         self.message_received.connect(self.append_text)
 
+        # Set the style-sheet
+        self.setStyleSheet("""
+            QWidget {
+                background-color: #303030;
+            }
+
+            QPlainTextEdit {
+                background-color: #1E1E1E;
+                color: #E8E8E8;
+                border: 1px solid #444444;
+                border-radius: 6px;
+                padding: 8px;
+                selection-background-color: #555555;
+                selection-color: white;
+            }
+
+            QScrollBar:vertical {
+                background-color: #252525;
+                width: 12px;
+                margin: 0;
+            }
+
+            QScrollBar::handle:vertical {
+                background-color: #555555;
+                border-radius: 5px;
+                min-height: 24px;
+            }
+
+            QScrollBar::handle:vertical:hover {
+                background-color: #707070;
+            }
+
+            QScrollBar::add-line:vertical,
+            QScrollBar::sub-line:vertical {
+                height: 0;
+            }
+
+            QScrollBar::add-page:vertical,
+            QScrollBar::sub-page:vertical {
+                background: none;
+            }
+        """)
+
 
 
     #------------------------------------------------------
