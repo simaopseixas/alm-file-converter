@@ -3,9 +3,7 @@
 
 Things that were found in testing:
 
-- Some OME-Zarr pyramid levels crop image edges.
-- OME-Zarr fabricates unknown metadata as 1.0 scales and (0,0,0) positions.
-- Large conversions provide no progress indication.
+- Some OME-Zarr pyramid levels crop image edges. (still need to test the fix)
 - Failed/interrupted writes can leave large partial outputs.
 
 ---------------------------------------------------------------

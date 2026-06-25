@@ -1401,10 +1401,14 @@ class writing_functions:
 
                 target_image = multiscales.images[level_index]
                 target_chunks = target_image.data.chunksize
-                target_y, target_x = target_image.data.shape[-2:]
 
                 sliced_array = base_array[..., ::factor, ::factor]
-                sliced_array = sliced_array[..., :target_y, :target_x]
+
+                # Ensure chunks are not larger than the new array dimensions.
+                target_chunks = tuple(
+                    min(chunk, size)
+                    for chunk, size in zip(target_chunks, sliced_array.shape,)
+                )
 
                 target_image.data = sliced_array.rechunk(target_chunks)
 
