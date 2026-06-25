@@ -738,13 +738,15 @@ class file_reading_functions:
             """
             Helper function to access the .lif data to build the dask array
             """
-            lif = LifFile(file_path)
-            img = lif.get_image(image_index)
 
-            planes = []
+            with open(file_path, "rb") as handle:
+                lif = LifFile(handle)
+                img = lif.get_image(image_index)
 
-            for z in range(Z):
-                planes.append(np.asarray(img.get_frame(z=z, t=t, c=c, m=m)))
+                planes = []
+
+                for z in range(Z):
+                    planes.append(np.asarray(img.get_frame(z=z, t=t, c=c, m=m)))
 
             return np.stack(planes, axis=0)
         
@@ -783,41 +785,42 @@ class file_reading_functions:
             return t_stack
         
         # Access the lif
-        lif = LifFile(file_path)
+        with open(file_path, "rb") as handle:
+            lif = LifFile(handle)
 
-        # Extract the series
-        images = list(lif.get_iter_image())
+            # Extract the series
+            images = list(lif.get_iter_image())
 
-        if not images:
-            raise ValueError(f"No readable image series found in .lif file: {file_path}")
-        
-        image_series = []
-
-        for image_index, img in enumerate(images):
+            if not images:
+                raise ValueError(f"No readable image series found in .lif file: {file_path}")
             
-            # Get the series dimensions
-            dims = img.info["dims"]
+            image_series = []
 
-            # Get the available mosaics
-            M = dims.m
+            for image_index, img in enumerate(images):
+                
+                # Get the series dimensions
+                dims = img.info["dims"]
 
-            # For each mosaic inside the "series"
-            for m in range(M):
+                # Get the available mosaics
+                M = dims.m
 
-                # Get the metadata
-                voxel_size_metadata, time_metadata, position_metadata = get_lif_metadata(lif, img, m)
+                # For each mosaic inside the "series"
+                for m in range(M):
 
-                # Compute the TCZYX dask array
-                image_array = build_tczyx_array(file_path, image_index, img, m)
+                    # Get the metadata
+                    voxel_size_metadata, time_metadata, position_metadata = get_lif_metadata(lif, img, m)
 
-                # Append the mosaic information on the list
-                image_series.append({
-                    "array": image_array,
-                    "axes": "TCZYX",
-                    "voxel_size_metadata": voxel_size_metadata,
-                    "time_metadata": time_metadata,
-                    "position_metadata": position_metadata,
-                })
+                    # Compute the TCZYX dask array
+                    image_array = build_tczyx_array(file_path, image_index, img, m)
+
+                    # Append the mosaic information on the list
+                    image_series.append({
+                        "array": image_array,
+                        "axes": "TCZYX",
+                        "voxel_size_metadata": voxel_size_metadata,
+                        "time_metadata": time_metadata,
+                        "position_metadata": position_metadata,
+                    })
 
         return image_series
 
