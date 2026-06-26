@@ -1349,7 +1349,7 @@ class writing_functions:
 
     #--------------------------------------------------------------------------
 
-    def write_ome_zarr(output_path, image_series, compress_output=False):
+    def write_ome_zarr(output_path, image_series, compress_output=False, create_zarr_pyramids=False):
         """
         Function that takes a list of dictionaries with image series data as an input
         and writes it into an .ome.zarr file
@@ -1435,10 +1435,14 @@ class writing_functions:
             # This is not used for actual pyramid generation but rather for their metadata
 
             # create the downsampling factor lists
-            pyramid_factors = [factor for factor in [2, 4, 8, 16]
-                if img_array.shape[-2] // factor >= 1
-                and img_array.shape[-1] // factor >= 1
-            ]
+            if create_zarr_pyramids:
+                pyramid_factors = [
+                    factor for factor in [2, 4, 8, 16]
+                    if img_array.shape[-2] // factor >= 1
+                    and img_array.shape[-1] // factor >= 1
+                ]
+            else:
+                pyramid_factors = []
 
             scale_factors = [{"z": 1, "y": factor, "x": factor} for factor in pyramid_factors]
 
