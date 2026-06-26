@@ -4,7 +4,7 @@ Before release:
 
 - check time-frame metadata writing
 
-- Add the compression and pyramid behavior to complement the checkboxes
+- check the error in which a file was written without pyramids and then I wrote the same file with pyramids and an error emerged.
 
 ---------------------------------------------------------------
 
