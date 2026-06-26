@@ -26,6 +26,7 @@ from bioio import BioImage
 import bioio_bioformats
 import ngff_zarr as nz
 import h5py
+import shutil
 
 #################################################################
 # File Reading Functions
@@ -1258,6 +1259,55 @@ class writing_functions:
 
         raise TypeError(f"Unsupported array type: {type(data)}")
     
+    def write_with_temp_output(output_path, write_function):
+        """
+        Writes a temporary output file that gets deleted if the write process doesn't complete.
+        If it completes it changes from temporary to permanent.
+        """
+
+        output_path = Path(output_path)
+        # create a temporary path to write the file/folder before it finishes
+        temp_path = output_path.with_name(output_path.name + ".writing")
+
+        # Remove any previous temporary output that may have been left after an interrupted conversion
+        if temp_path.exists():
+            writing_functions.remove_path(temp_path)
+
+        try:
+            # write the file/folder into the temporary path
+            write_function(temp_path)
+
+            # If there is already an output with the same name, remove it before replacing
+            if output_path.exists():
+                writing_functions.remove_path(output_path)
+
+            # Rename the finished temporary output into the final output path
+            temp_path.rename(output_path)
+
+        except BaseException:
+            # If anything fails, remove the unfinished temporary output
+            if temp_path.exists():
+                writing_functions.remove_path(temp_path)
+
+            # raise the error to be reported
+            raise
+
+    def remove_path(path):
+        """
+        Function that removes either a file or a folder.
+        Used to clean temporary outputs after failed conversions.
+        """
+
+        path = Path(path)
+
+        # if the path is an OME-Zarr folder, remove the folder with everything inside it
+        if path.is_dir():
+            shutil.rmtree(path)
+
+        # if the path is a file, remove only the file
+        elif path.exists():
+            path.unlink()
+    
     #--------------------------------------------------------------------------
     
     def normalize_to_tczyx(img_array, img_axes):
@@ -1439,15 +1489,31 @@ class writing_functions:
             finally:
                 nz.config.memory_target = original_memory_target
 
+
+        def write_all_series(temp_series_folder):
+            """
+            Function to write all series
+            """
+            temp_series_folder.mkdir(parents=True, exist_ok=True)
+
+            for series_index, series in enumerate(image_series, start=1):
+                series_output_path = temp_series_folder / f"series_{series_index}.ome.zarr"
+                write_single_ome_zarr(series_output_path, series)
+
+
+        #-----------------------------------------------------------------------------------------
+        # continue the main function
+
         # Get the output path
         output_path = Path(output_path)
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
         # If there is a single series
         if len(image_series) == 1:
-            write_single_ome_zarr(output_path, image_series[0])
+            #write_single_ome_zarr(output_path, image_series[0])
+            writing_functions.write_with_temp_output(output_path, lambda temp_path: write_single_ome_zarr(temp_path, image_series[0]))
 
-        # If there is more than one series in the list
+        # If there is more than 1 series in the list
         else:
 
             # Create the folder in which the series will be saved
@@ -1456,13 +1522,7 @@ class writing_functions:
             series_folder = output_path.with_name(
                 f"{output_path.name.removesuffix('.ome.zarr')}_{output_format_name}")
             
-            series_folder.mkdir(parents=True, exist_ok=True)
-
-            # Write a file for each of the available series
-            for series_index, series in enumerate(image_series, start=1):
-                series_output_path = series_folder / (f"series_{series_index}.ome.zarr" )
-
-                write_single_ome_zarr(series_output_path, series)
+            writing_functions.write_with_temp_output(series_folder, write_all_series)
 
 
     #--------------------------------------------------------------------------
@@ -1608,41 +1668,51 @@ class writing_functions:
                         for plane in z_slab:
                             yield np.ascontiguousarray(plane)
 
+        def write_ome_tiff_file(temp_output_path):
+            """
+            Helper function that finalizes the write pipeline
+            """
+
+            # Initialize the writer
+            with tifffile.TiffWriter(temp_output_path, bigtiff=True, ome=True) as ome_tif:
+
+                for series in image_series:
+
+                    # Get the data form the singular series
+                    img_array = series["array"]
+                    img_axes = series["axes"]
+                    voxel_size_metadata = series["voxel_size_metadata"]
+                    time_metadata = series["time_metadata"]
+                    position_metadata = series["position_metadata"]
+
+                    # Raise an error if the axes are not in the TCZYX format
+                    if img_axes != "TCZYX":
+                        raise ValueError(f"The series must be TCZYX before writing. Got {img_axes}")
+
+                    # Get the dimensions
+                    T, C, Z, Y, X = img_array.shape
+
+                    # Get the OME formatted metadata of the series
+                    ome_metadata = get_ome_metadata(voxel_size_metadata, time_metadata, position_metadata, T, C, Z)
+
+                    # Write this series into the OME-TIF file
+                    ome_tif.write(
+                        data=tczyx_plane_access(img_array, T, C, Z),
+                        shape=(T, C, Z, Y, X),
+                        dtype=img_array.dtype,
+                        photometric="minisblack",
+                        metadata=ome_metadata,
+                        maxworkers=1,
+                    )
+
+
         # Get the output path
         output_path = Path(output_path)
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
-        # Initialize the writer
-        with tifffile.TiffWriter(output_path, bigtiff=True, ome=True) as ome_tif:
+        # Write the file
+        writing_functions.write_with_temp_output(output_path, write_ome_tiff_file)
 
-            for series in image_series:
-
-                # Get the data form the singular series
-                img_array = series["array"]
-                img_axes = series["axes"]
-                voxel_size_metadata = series["voxel_size_metadata"]
-                time_metadata = series["time_metadata"]
-                position_metadata = series["position_metadata"]
-
-                # Raise an error if the axes are not in the TCZYX format
-                if img_axes != "TCZYX":
-                    raise ValueError(f"The series must be TCZYX before writing. Got {img_axes}")
-
-                # Get the dimensions
-                T, C, Z, Y, X = img_array.shape
-
-                # Get the OME formatted metadata of the series
-                ome_metadata = get_ome_metadata(voxel_size_metadata, time_metadata, position_metadata, T, C, Z)
-
-                # Write this series into the OME-TIF file
-                ome_tif.write(
-                    data=tczyx_plane_access(img_array, T, C, Z),
-                    shape=(T, C, Z, Y, X),
-                    dtype=img_array.dtype,
-                    photometric="minisblack",
-                    metadata=ome_metadata,
-                    maxworkers=1,
-                )
 
 
     #--------------------------------------------------------------------------
@@ -1790,13 +1860,26 @@ class writing_functions:
                     resolution=get_resolution(voxel_size_metadata),
                 )
 
+        def write_all_tiff_series(temp_series_folder):
+            """
+            Helper function that writes all series into a folder
+            """
+            temp_series_folder.mkdir(parents=True, exist_ok=True)
+
+            for series_index, series in enumerate(image_series, start=1):
+                series_output_path = temp_series_folder / f"series_{series_index}{output_path.suffix}"
+                write_single_tiff(series_output_path, series)
+
+        #-----------------------------------------------------------------
+        # continue the pipeline
+ 
         # Get the output path
         output_path = Path(output_path)
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
         # Write the tif if there is a single series in the list
         if len(image_series) == 1:
-            write_single_tiff(output_path, image_series[0])
+            writing_functions.write_with_temp_output(output_path, lambda temp_path: write_single_tiff(temp_path, image_series[0]))
 
         # If there is more than one series in the list
         else:
@@ -1807,10 +1890,4 @@ class writing_functions:
                 f"{output_path.name.removesuffix(output_path.suffix)}_{output_format_name}"
             )
 
-            series_folder.mkdir(parents=True, exist_ok=True)
-
-            # Write a file for each of the available series
-            for series_index, series in enumerate(image_series, start=1):
-                series_output_path = series_folder / (f"series_{series_index}{output_path.suffix}")
-
-                write_single_tiff(series_output_path, series)
+            writing_functions.write_with_temp_output(series_folder, write_all_tiff_series)
