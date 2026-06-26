@@ -375,26 +375,36 @@ class ConverterWidget(QWidget):
 
         )
 
-        # Separator line
-        separator_line = QFrame()
-        separator_line.setFrameShape(QFrame.HLine)
-        separator_line.setFrameShadow(QFrame.Sunken)
-        separator_line.setObjectName("separatorLine")
-
         # Checkbox for output compression
         self.compress_output_checkbox = QCheckBox("Compress output files")
         # get the last used state
         last_compression_checkbox_state = self.settings.value("compress_output_enabled", False, type=bool)
         self.compress_output_checkbox.setChecked(last_compression_checkbox_state)
         self.compress_output_checkbox.toggled.connect(self.save_compress_output_setting)
-
+        # add a tooltip
+        self.tooltip_manager.attach_tooltip(
+            self.compress_output_checkbox,
+            "Creates smaller output files, but conversion may take longer." \
+        )
 
         # Checkbox for OME-ZARR pyramids creation
-        self.zarr_pyramids_checkbox = QCheckBox("Create pyramids in OME-Zarr output files")
+        self.zarr_pyramids_checkbox = QCheckBox("OME-Zarr pyramid levels")
         last_zarr_pyramids_checkbox_state = self.settings.value("zarr_pyramids_enabled", False, type=bool)
         self.zarr_pyramids_checkbox.setChecked(last_zarr_pyramids_checkbox_state)
         self.zarr_pyramids_checkbox.toggled.connect(self.save_zarr_pyramids_setting)
         self.zarr_pyramids_checkbox.setVisible(False)
+        # add a tooltip
+        self.tooltip_manager.attach_tooltip(
+            self.zarr_pyramids_checkbox,
+            "Adds downsampled pyramid levels to the output OME-Zarr.\n" \
+            "This will increase conversion time and output size." \
+        )
+
+        # Separator line
+        separator_line = QFrame()
+        separator_line.setFrameShape(QFrame.HLine)
+        separator_line.setFrameShadow(QFrame.Sunken)
+        separator_line.setObjectName("separatorLine")
 
         # simple label text
         self.convert_label = QLabel()
@@ -461,9 +471,9 @@ class ConverterWidget(QWidget):
 
         # Construction of the full UI
         layout.addLayout(batch_row)
-        layout.addWidget(separator_line)
         layout.addWidget(self.compress_output_checkbox)
         layout.addWidget(self.zarr_pyramids_checkbox)
+        layout.addWidget(separator_line)
         layout.addWidget(self.convert_label, alignment=Qt.AlignLeft)
         layout.addWidget(self.format_combobox)
         layout.addWidget(self.choose_button)
