@@ -67,7 +67,7 @@ class ConversionWorker(QObject):
     # signal that is used when the conversion ends to restore the main window and clean up the thread
     finished = Signal()
 
-    def __init__(self, conversion_mode, output_file_format, input_file_path=None, input_file_paths=None, n_files=None, input_folder=None):
+    def __init__(self, conversion_mode, output_file_format, input_file_path=None, input_file_paths=None, n_files=None, input_folder=None, compress_output=False):
         """
         Store the conversion type and its arguments
         "conversion_mode" can be: "single_file", "single_zarr" or "batch".
@@ -82,6 +82,7 @@ class ConversionWorker(QObject):
         self.input_file_paths = input_file_paths
         self.n_files = n_files
         self.input_folder = input_folder
+        self.compress_output = compress_output
 
 
     @Slot()
@@ -96,15 +97,15 @@ class ConversionWorker(QObject):
         try:
             # single-file conversion
             if self.conversion_type == "single_file":
-                file_conversion.single_file_conversion(self.output_file_format, self.input_file_path, logger=logger)
+                file_conversion.single_file_conversion(self.output_file_format, self.input_file_path, compress_output = self.compress_output, logger=logger)
 
             # single OME-Zarr file conversion
             elif self.conversion_type == "single_zarr":
-                file_conversion.single_omezarr_conversion(self.output_file_format, self.input_file_path, logger=logger)
+                file_conversion.single_omezarr_conversion(self.output_file_format, self.input_file_path, compress_output = self.compress_output, logger=logger)
 
             # batch conversion
             elif self.conversion_type == "batch":
-                file_conversion.batch_conversion(self.output_file_format, self.input_file_paths, self.n_files, self.input_folder, logger=logger)
+                file_conversion.batch_conversion(self.output_file_format, self.input_file_paths, self.n_files, self.input_folder, compress_output = self.compress_output, logger=logger)
 
         # always notify the GUI that the worker finished
         finally:
@@ -225,6 +226,9 @@ class ConverterWidget(QWidget):
 
         # create the thread object
         self.conversion_thread = QThread(self)
+        
+        # get the compression boolean
+        compress_output = self.compress_output_checkbox.isChecked()
 
         # create the worker object
         self.conversion_worker = ConversionWorker(
@@ -234,6 +238,7 @@ class ConverterWidget(QWidget):
             input_file_paths=input_file_paths,
             n_files=n_files,
             input_folder=input_folder,
+            compress_output=compress_output,
         )
 
         # move the worker into the new thread

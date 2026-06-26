@@ -37,7 +37,7 @@ class file_conversion:
     #------------------------------------------
     # Batch Conversion
 
-    def batch_conversion(output_file_format, input_file_paths=None, n_files=None, input_folder=None, logger=None):
+    def batch_conversion(output_file_format, input_file_paths=None, n_files=None, input_folder=None, compress_output=False, logger=None):
         """
         Performs the conversion algorithm for a batched conversion
         From folder choice, reading as a dask array, and writing as the intended format.
@@ -117,7 +117,7 @@ class file_conversion:
                     writer_function = file_conversion.get_writer_function(output_file_format)
 
                     # Apply the writer function to create the converted file
-                    writer_function(output_file, image_series)
+                    writer_function(output_file, image_series, compress_output)
 
 
                 except Exception as error:
@@ -200,7 +200,7 @@ class file_conversion:
     #------------------------------------------
     # Single-File Conversion
 
-    def single_file_conversion(output_file_format, input_file_path=None, logger=None):
+    def single_file_conversion(output_file_format, input_file_path=None, compress_output=False, logger=None):
         """
         Performs the conversion algorithm for a single file.
         From file choice, reading as a dask array and writing as the intended format.
@@ -263,7 +263,7 @@ class file_conversion:
                 writer_function = file_conversion.get_writer_function(output_file_format)
 
                 # Apply the writer function to create the converted file
-                writer_function(output_file, image_series)
+                writer_function(output_file, image_series, compress_output)
 
             except Exception as error:
                 conversion_failed = True
@@ -313,7 +313,7 @@ class file_conversion:
             
 
 
-    def single_omezarr_conversion(output_file_format, input_file_path=None, logger=None):
+    def single_omezarr_conversion(output_file_format, input_file_path=None, compress_output=False, logger=None):
         """
         Performs the conversion algorithm for a single OME-Zarr file.
         From file choice, reading as a dask array and writing as the intended format.
@@ -377,7 +377,7 @@ class file_conversion:
                 writer_function = file_conversion.get_writer_function(output_file_format)
 
                 # Apply the writer function to create the converted file
-                writer_function(output_file, image_series)
+                writer_function(output_file, image_series, compress_output)
 
             except Exception as error:
                 conversion_failed = True

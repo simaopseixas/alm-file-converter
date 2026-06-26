@@ -27,6 +27,7 @@ import bioio_bioformats
 import ngff_zarr as nz
 import h5py
 import shutil
+from numcodecs import Blosc
 
 #################################################################
 # File Reading Functions
@@ -1348,7 +1349,7 @@ class writing_functions:
 
     #--------------------------------------------------------------------------
 
-    def write_ome_zarr(output_path, image_series):
+    def write_ome_zarr(output_path, image_series, compress_output=False):
         """
         Function that takes a list of dictionaries with image series data as an input
         and writes it into an .ome.zarr file
@@ -1484,6 +1485,7 @@ class writing_functions:
                     multiscales,
                     version="0.4",
                     overwrite=True,
+                    compressor=zarr_compressor,
                 )
 
             finally:
@@ -1508,6 +1510,9 @@ class writing_functions:
         output_path = Path(output_path)
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
+        # Get the chosen compression
+        zarr_compressor = Blosc(cname="zstd", clevel=3, shuffle=Blosc.SHUFFLE) if compress_output else None
+
         # If there is a single series
         if len(image_series) == 1:
             #write_single_ome_zarr(output_path, image_series[0])
@@ -1528,7 +1533,7 @@ class writing_functions:
     #--------------------------------------------------------------------------
 
 
-    def write_ome_tiff(output_path, image_series):
+    def write_ome_tiff(output_path, image_series, compress_output=False):
         """
         Function that takes a list of dask arrays as an input and writes its data into an .ome.tif or .ome.tiff file
         """
@@ -1703,8 +1708,11 @@ class writing_functions:
                         photometric="minisblack",
                         metadata=ome_metadata,
                         maxworkers=1,
+                        compression=ome_tiff_compressor,
                     )
 
+        # Get the chosen compression
+        ome_tiff_compressor = "zlib" if compress_output else None
 
         # Get the output path
         output_path = Path(output_path)
@@ -1717,7 +1725,7 @@ class writing_functions:
 
     #--------------------------------------------------------------------------
 
-    def write_tiff(output_path, image_series):
+    def write_tiff(output_path, image_series, compress_output=False):
         """
         Function that takes a list of dictionaries as an input and writes its data into a .tif or .tiff file.
         These .tif and .tiff files are Fiji/ImageJ compatible.
@@ -1858,6 +1866,7 @@ class writing_functions:
                     photometric="minisblack",
                     metadata=get_fiji_metadata(T, C, Z, voxel_size_metadata, time_metadata, position_metadata),
                     resolution=get_resolution(voxel_size_metadata),
+                    compression=tiff_compressor,
                 )
 
         def write_all_tiff_series(temp_series_folder):
@@ -1876,6 +1885,9 @@ class writing_functions:
         # Get the output path
         output_path = Path(output_path)
         output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Get the chosen compression
+        tiff_compressor = "zlib" if compress_output else None
 
         # Write the tif if there is a single series in the list
         if len(image_series) == 1:
