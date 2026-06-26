@@ -1346,6 +1346,12 @@ class writing_functions:
             position_metadata = series["position_metadata"]
             requires_serial = series.get("requires_single_threaded_compute", False)
 
+            # do the image rechunking if necessary (if the chunk's Y or X is less than 128)
+            target_chunks = ( 1, 1, min(img_array.shape[2], 16), min(img_array.shape[3], 1024), min(img_array.shape[4], 1024),)
+
+            if img_array.chunksize[-2] < 128 or img_array.chunksize[-1] < 128:
+                img_array = img_array.rechunk(target_chunks)
+
             # Raise an error if the axes are not TCZYX
             if img_axes != "TCZYX":
                 raise ValueError(f"The series must be TCZYX before writing. Got {img_axes}")

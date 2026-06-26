@@ -1,18 +1,21 @@
 # TO-DO
 
+Before release:
 
-Things that were found in testing:
-
-- Some OME-Zarr pyramid levels crop image edges. (still need to test the fix)
-- Failed/interrupted writes can leave large partial outputs.
-
----------------------------------------------------------------
+- check time-frame metadata writing
 
 - Add the compression and pyramid behavior to complement the checkboxes
 
-- Add .czi reading file format
-     
+---------------------------------------------------------------
+
+Things that were found in testing:
+
+- Failed/interrupted writes can leave large partial outputs.
+
+
 ### Future
+
+- Add .czi reading file format
 
 - Validate the time-frame metadata in all file formats:
     Remaining:
