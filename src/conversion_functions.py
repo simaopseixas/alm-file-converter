@@ -28,6 +28,8 @@ import ngff_zarr as nz
 import h5py
 import shutil
 from numcodecs import Blosc
+import time
+import gc
 
 #################################################################
 # File Reading Functions
@@ -1272,42 +1274,95 @@ class writing_functions:
 
         # Remove any previous temporary output that may have been left after an interrupted conversion
         if temp_path.exists():
-            writing_functions.remove_path(temp_path)
+            writing_functions.remove_path_with_retries(temp_path)
+
+        # start a write completion flag
+        write_completed = False
 
         try:
             # write the file/folder into the temporary path
             write_function(temp_path)
+            write_completed = True
+
+            gc.collect()
 
             # If there is already an output with the same name, remove it before replacing
             if output_path.exists():
-                writing_functions.remove_path(output_path)
+                writing_functions.remove_path_with_retries(output_path)
 
             # Rename the finished temporary output into the final output path
-            temp_path.rename(output_path)
+            writing_functions.rename_with_retries(temp_path, output_path)
 
         except BaseException:
             # If anything fails, remove the unfinished temporary output
-            if temp_path.exists():
-                writing_functions.remove_path(temp_path)
+            # but only if the writing process did not succeed.
+            # if it did, keep the ".writing" file, since it corresponds to the full converted file
+            if not write_completed and temp_path.exists():
+                writing_functions.remove_path_with_retries(temp_path)
 
             # raise the error to be reported
             raise
 
-    def remove_path(path):
+    def rename_with_retries(source, target, attempts=20, delay=0.5):
+        """
+        Function that renames the writing file to the permanent one.
+        If there is a permission error raised by Windows, it retries the renaming,
+        """
+
+        source = Path(source)
+        target = Path(target)
+
+        last_error = None
+
+        # Attempt a maximum of 20 tries
+        for attempt in range(attempts):
+
+            # try the renaming of the path
+            try:
+                source.rename(target)
+                return
+            
+            # if an error happens, garbage collect and retry
+            except PermissionError as error:
+
+                # save the latest error
+                last_error = error
+                # garbage collect
+                gc.collect()
+                # stop the pipeline for a delay
+                time.sleep(delay)
+
+        raise last_error
+
+    def remove_path_with_retries(path, attempts=20, delay=0.5):
         """
         Function that removes either a file or a folder.
         Used to clean temporary outputs after failed conversions.
+        If there is a permission error raised by Windows, it retries the removal.
         """
 
         path = Path(path)
 
-        # if the path is an OME-Zarr folder, remove the folder with everything inside it
-        if path.is_dir():
-            shutil.rmtree(path)
+        last_error = None
 
-        # if the path is a file, remove only the file
-        elif path.exists():
-            path.unlink()
+        # Attempt a maximum of 20 tries
+        for attempt in range(attempts):
+
+            # try to remove the path
+            try:
+                writing_functions.remove_path(path)
+                return
+            
+            # if an error happens, garbage collect and retry
+            except PermissionError as error:
+
+                # save the latest error
+                last_error = error
+                gc.collect()
+                # stop the pipeline for a delay
+                time.sleep(delay)
+
+        raise last_error
     
     #--------------------------------------------------------------------------
     

@@ -174,14 +174,14 @@ class file_conversion:
 
                 # Different prints for different cases
                 if image_series is not None and len(image_series) > 1 and output_file_format in (".tif", ".tiff"):
-                    output_format_name = output_file.suffix.replace(".", "")
+                    output_format_name = output_file.suffix.replace(".", "").upper()
                     logger.print(
                         f"Saved files to: "
                         f"{output_file.name.removesuffix(output_file.suffix)}_{output_format_name}"
                     )
 
                 elif image_series is not None and len(image_series) > 1 and output_file_format == ".ome.zarr":
-                    logger.print(f"Saved files to: {output_file.name.removesuffix('.ome.zarr')}_omezarr")
+                    logger.print(f"Saved files to: {output_file.name.removesuffix('.ome.zarr')}_OMEZARR")
 
                 else:
                     logger.print(f"Saved File: {output_file.name}")
@@ -323,14 +323,14 @@ class file_conversion:
         else:
             # Different prints for different cases
             if image_series is not None and len(image_series) > 1 and output_file_format in (".tif", ".tiff"):
-                output_format_name = output_file.suffix.replace(".", "")
+                output_format_name = output_file.suffix.replace(".", "").upper()
                 logger.print(
                     f"Saved files to: "
                     f"{output_file.name.removesuffix(output_file.suffix)}_{output_format_name}"
                 )
 
             elif image_series is not None and len(image_series) > 1 and output_file_format == ".ome.zarr":
-                logger.print(f"Saved files to: {output_file.name.removesuffix('.ome.zarr')}_omezarr")
+                logger.print(f"Saved files to: {output_file.name.removesuffix('.ome.zarr')}_OMEZARR")
 
             else:
                 logger.print(f"Saved File: {output_file.name}")
@@ -449,14 +449,14 @@ class file_conversion:
         else:
             # Different prints for different cases
             if image_series is not None and len(image_series) > 1 and output_file_format in (".tif", ".tiff"):
-                output_format_name = output_file.suffix.replace(".", "")
+                output_format_name = output_file.suffix.replace(".", "").upper()
                 logger.print(
                     f"Saved files to: "
                     f"{output_file.name.removesuffix(output_file.suffix)}_{output_format_name}"
                 )
 
             elif image_series is not None and len(image_series) > 1 and output_file_format == ".ome.zarr":
-                logger.print(f"Saved files to: {output_file.name.removesuffix('.ome.zarr')}_omezarr")
+                logger.print(f"Saved files to: {output_file.name.removesuffix('.ome.zarr')}_OMEZARR")
 
             else:
                 logger.print(f"Saved File: {output_file.name}")
