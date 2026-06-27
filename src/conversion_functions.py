@@ -1333,7 +1333,24 @@ class writing_functions:
                 time.sleep(delay)
 
         raise last_error
+    
+    def remove_path(path):
+        """
+        Function that removes either a file or a folder.
+        Used to clean temporary outputs after failed conversions.
+        """
 
+        path = Path(path)
+
+        # if the path is an OME-Zarr folder, remove the folder with everything inside it
+        if path.is_dir():
+            shutil.rmtree(path)
+
+        # if the path is a file, remove only the file
+        elif path.exists():
+            path.unlink()
+
+            
     def remove_path_with_retries(path, attempts=20, delay=0.5):
         """
         Function that removes either a file or a folder.

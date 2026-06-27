@@ -4,15 +4,6 @@ Before release:
 
 - check time-frame metadata writing
 
-- check the error in which a file was written without pyramids and then I wrote the same file with pyramids and an error emerged.
-
----------------------------------------------------------------
-
-Things that were found in testing:
-
-- Failed/interrupted writes can leave large partial outputs.
-
-
 ### Future
 
 - Add .czi reading file format
