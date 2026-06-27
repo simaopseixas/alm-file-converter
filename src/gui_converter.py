@@ -218,7 +218,8 @@ class ConverterWidget(QWidget):
 
             # Restore the main window when the logger is restored
             else:
-                self.logger.showNormal()
+                if self.logger.isMinimized():
+                    self.logger.showNormal()
                 self.logger.raise_()
 
         # Always clear the sync flags
@@ -234,8 +235,8 @@ class ConverterWidget(QWidget):
         Function that runs when the conversion worker finishes.
         """
 
-        self.conversion_running = False
         self.restore_window()
+        self.conversion_running = False
 
     def start_conversion_worker(self, conversion_mode, output_file_format, input_file_path=None, input_file_paths=None, n_files=None, input_folder=None):
         """

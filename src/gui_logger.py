@@ -157,7 +157,8 @@ class LoggerWindow(QWidget):
 
             # Restore the main window when the logger is restored
             else:
-                self.main_window.showNormal()
+                if self.main_window.isMinimized():
+                    self.main_window.showNormal()
                 self.main_window.raise_()
 
         # Always clear the sync flags
@@ -199,11 +200,7 @@ class LoggerWindow(QWidget):
     def initial_print(self):
 
         self.print()
-        self.print()
-        self.print("                                                    ╔════════════════════════════════════╗                                                      ")
-        self.print("                                                    ║  ╔══════════════════════════════╗  ║                                                      ")
-        self.print("                                                    ║  ║      ALM FILE CONVERTER      ║  ║                                                      ")
-        self.print("                                                    ║  ╚══════════════════════════════╝  ║                                                      ")
-        self.print("                                                    ╚════════════════════════════════════╝                                                      ")
-        self.print()
+        self.print("============================================================================================================================================")
+        self.print("                                                              ALM FILE CONVERTER                                                            ")
+        self.print("============================================================================================================================================")
         self.print()

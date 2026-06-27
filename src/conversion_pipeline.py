@@ -79,7 +79,8 @@ class file_conversion:
             file_size = file_conversion.get_disk_space(input_file_path)
 
             logger.print()
-            logger.print(f"Converting file {file_index}/{n_files}: {input_file_path.name} to {output_file_format} ({file_size})")
+            logger.print(f"Converting file {file_index}/{n_files}:")
+            logger.print(f"{input_file_path.name} to {output_file_format} ({file_size})")
 
             conversion_failed = False
             error_message = None

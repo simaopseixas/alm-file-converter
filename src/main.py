@@ -17,7 +17,7 @@ if __name__ == "__main__":
     # Initialize the logger
     logger = LoggerWindow()
     logger.setWindowIcon(QIcon(str(icon_path)))
-    logger.resize(1050, 550)
+    logger.resize(1060, 550)
     logger.show()
 
     # Initial print in the logger

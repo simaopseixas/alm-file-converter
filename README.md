@@ -1,6 +1,8 @@
 # ALM File Converter
 
-A Python GUI tool for microscopy file conversion. ALM File Converter is intended for fluorescence microscopy datasets, and it is capable of converting large multidimensional microscopy image data.
+A Python GUI tool for microscopy file conversion. Designed to convert proprietary and open-source file formats into the TIF, TIFF, OME-TIF, OME-TIFF and OME-NGFF Zarr file formats.
+
+ALM File Converter is intended for fluorescence microscopy datasets, and it is capable of converting large multidimensional microscopy image data.
 
 A standalone executable is available on the latest Release.
 
@@ -12,7 +14,7 @@ A standalone executable is available on the latest Release.
 
 ### Input
 
-`.ics`, `.ims`, `.lif`, `.nd2`, `.zvi`, `.tif`, `.tiff`, `.ome.tif`, `.ome.tiff`, `.ome.zarr`.
+`.ics`, `.ims`, `.lif`, `.nd2`, `.zvi`, `.tif`, `.tiff`, `.ome.tif`, `.ome.tiff`, `.ome.zarr`/`.zarr`.
 
 ### Output
 
@@ -30,14 +32,16 @@ A standalone executable is available on the latest Release.
 4. Disable **Batch Processing** to convert a single file.
 5. Select the input file or folder.
 6. Wait for the conversion to finish.
-7. Converted files are saved inside the generated folder: `Converted Files`.
+7. Converted files are saved inside a generated folder. Single-file conversions use `Converted Files`; batch conversions use `Converted Files (FORMAT)`, e.g. `Converted Files OME ZARR`.
 
 ## Features
 
 - Converts single microscopy files or multiple files from a folder in a batch conversion.
 - Supports lazy reading to handle large datasets (excluding only `.zvi`).
 - Supports multi-position reading in the `.lif`, `.nd2`, `.ome.tif` and `.ome.tiff` file formats.
-- Preserves voxel size and time-step metadata when available.
+- Preserves voxel size, time-step, and position metadata when available.
+- Supports output file compression.
+- Supports pyramidal levels in OME-Zarr outputs.
 
 
 ### Multi-Position Data
@@ -59,7 +63,7 @@ For multi-position outputs:
 
 ## Running the code
 
-You will need a Python installation.
+The setup scripts will install Python 3.12 with uv.
 
 This project was built on Python 3.12.
 
