@@ -1,9 +1,22 @@
 # -*- mode: python ; coding: utf-8 -*-
-from PyInstaller.utils.hooks import collect_all
+from PyInstaller.utils.hooks import collect_all, collect_submodules
 
 datas = [('src\\attributes', 'attributes')]
 binaries = []
 hiddenimports = []
+
+# ngff-zarr imports dask-image during OME-Zarr pyramid creation; dask-image then
+# imports scipy.ndimage, which dynamically imports scipy's Array API helpers.
+hiddenimports += collect_submodules(
+    'scipy._external.array_api_compat',
+    filter=lambda name: '.cupy' not in name and '.torch' not in name,
+)
+hiddenimports += collect_submodules(
+    'scipy.ndimage',
+    filter=lambda name: '.tests' not in name,
+)
+hiddenimports += collect_submodules('dask_image')
+
 tmp_ret = collect_all('wasmtime')
 datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
 tmp_ret = collect_all('xsdata_pydantic_basemodel')
@@ -50,7 +63,7 @@ exe = EXE(
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
-    console=True,
+    console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,

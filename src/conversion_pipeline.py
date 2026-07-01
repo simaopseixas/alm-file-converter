@@ -157,8 +157,9 @@ class file_conversion:
                     report_file = output_folder / f"conversion_report_{timestamp}.txt"
 
                     with open(report_file, "w", encoding="utf-8") as report:
-                        report.write("Batch Conversion Report\n")
-                        report.write("=======================\n\n")
+                        report.write("=============================================================================\n")
+                        report.write("Batch Conversion Report:\n")
+                        report.write("=============================================================================\n\n")
 
                 # Append the current error
                 with open(report_file, "a", encoding="utf-8") as report:
@@ -189,8 +190,9 @@ class file_conversion:
         # Finalize the error report if it exists
         if report_file is not None:
             with open(report_file, "a", encoding="utf-8") as report:
-                report.write("Summary\n")
-                report.write("=======\n")
+                report.write("=============================================================================\n")
+                report.write("Summary:\n")
+                report.write("=============================================================================\n\n")
                 report.write(f"Total files: {n_files}\n")
                 report.write(f"Successful files: {successful_files}\n")
                 report.write(f"Failed files: {failed_files}\n")
