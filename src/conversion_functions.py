@@ -30,6 +30,7 @@ import shutil
 from numcodecs import Blosc
 import time
 import gc
+import datetime
 
 #################################################################
 # File Reading Functions
@@ -443,6 +444,20 @@ class file_reading_functions:
             Helper function that converets an HDF5 attribute into an integer value
             """
             return int(float(get_attr_text(group.attrs[name])))
+
+        def parse_ims_timepoint(value):
+            """
+            Helper function that retrieves the time-points from the HDF5 if available
+            """
+            value = get_attr_text(value).strip()
+
+            for time_format in ("%Y-%m-%d %H:%M:%S.%f", "%Y-%m-%d %H:%M:%S"):
+                try:
+                    return datetime.datetime.strptime(value, time_format)
+                except ValueError:
+                    pass
+
+            return None
         
         def get_ims_metadata(ims_file, img_array):
             """
@@ -473,8 +488,57 @@ class file_reading_functions:
             #-----------------------------------------------------------------------------
             # Time frame
 
-            # Fill the time data as None
             time_metadata = {"t": None}
+
+            time_info = None
+            
+            # See if there is time-info available
+            if "DataSetInfo" in ims_file and "TimeInfo" in ims_file["DataSetInfo"]:
+                time_info = ims_file["DataSetInfo"]["TimeInfo"]
+
+            # If there is, retrieve it
+            if time_info is not None:
+                n_timepoints = None
+
+                # get the number of time-points
+                for attr_name in ("DatasetTimePoints", "FileTimePoints"):
+                    # check if the attributes are in the available info
+                    if attr_name in time_info.attrs:
+                        n_timepoints = get_attr_int(time_info, attr_name)
+                        break
+
+                # start a list for the timepoints
+                timepoints = []
+
+                # if there are multiple timepoints
+                if n_timepoints is not None:
+                    # check all timepoints iteratively
+                    for timepoint_index in range(1, n_timepoints + 1):
+
+                        # get the corresponding timepoint
+                        attr_name = f"TimePoint{timepoint_index}"
+
+                        # pass to the next step of the loop if this attribute doesn't exist
+                        if attr_name not in time_info.attrs:
+                            continue
+
+                        # get the timepoint
+                        timepoint = parse_ims_timepoint(time_info.attrs[attr_name])
+
+                        # append the timepoint in the list if it was detected
+                        if timepoint is not None:
+                            timepoints.append(timepoint)
+
+                # get the average of the time points to use for the output files
+                if len(timepoints) >= 2:
+                    time_deltas = []
+
+                    for index in range(1, len(timepoints)):
+                        time_delta = (timepoints[index] - timepoints[index - 1]).total_seconds()
+                        time_deltas.append(time_delta)
+
+                    # append the average to the time metadata dictionary
+                    time_metadata["t"] = sum(time_deltas) / len(time_deltas)
 
             #-----------------------------------------------------------------------------
             # Positional metadata
