@@ -1326,7 +1326,13 @@ class writing_functions:
 
         raise TypeError(f"Unsupported array type: {type(data)}")
     
-    def write_with_temp_output(output_path, write_function):
+    def is_windows_access_denied_error(error):
+        """
+        Helper function that detects if the error is Windows declining access when renaming a file
+        """
+        return isinstance(error, OSError) and getattr(error, "winerror", None) == 5
+    
+    def write_with_temp_output(output_path, write_function, write_attempts=1, write_retry_delay=1):
         """
         Writes a temporary output file that gets deleted if the write process doesn't complete.
         If it completes it changes from temporary to permanent.
@@ -1344,9 +1350,39 @@ class writing_functions:
         write_completed = False
 
         try:
-            # write the file/folder into the temporary path
-            write_function(temp_path)
-            write_completed = True
+
+            # try multiple times to write (in case Windows doesn't give permission)
+            for attempt in range(write_attempts):
+
+                # try to write
+                try:
+                    if temp_path.exists():
+                        writing_functions.remove_path_with_retries(temp_path)
+
+                    # write the file/folder into the temporary path
+                    write_function(temp_path)
+                    write_completed = True
+                    break
+                
+                # if an error is raised
+                except Exception as error:
+                    if temp_path.exists():
+                        writing_functions.remove_path_with_retries(temp_path)
+
+                    # see if it can still be retried
+                    can_retry = (
+                        writing_functions.is_windows_access_denied_error(error) and attempt < write_attempts - 1
+                    )
+
+                    # if the file can still be retried do it
+                    if can_retry:
+                        # garbage collect
+                        gc.collect()
+                        # increase the delay time for each attempt
+                        time.sleep(write_retry_delay * (2 ** attempt))
+                        continue
+
+                    raise
 
             gc.collect()
 
@@ -1655,8 +1691,9 @@ class writing_functions:
 
         # If there is a single series
         if len(image_series) == 1:
-            #write_single_ome_zarr(output_path, image_series[0])
-            writing_functions.write_with_temp_output(output_path, lambda temp_path: write_single_ome_zarr(temp_path, image_series[0]))
+            
+            # write with 5 attempts in case there is a Windows permission error
+            writing_functions.write_with_temp_output(output_path, lambda temp_path: write_single_ome_zarr(temp_path, image_series[0]), write_attempts=5)
 
         # If there is more than 1 series in the list
         else:
@@ -1667,7 +1704,8 @@ class writing_functions:
             series_folder = output_path.with_name(
                 f"{output_path.name.removesuffix('.ome.zarr')}_{output_format_name}")
             
-            writing_functions.write_with_temp_output(series_folder, write_all_series)
+            # add writing attempts for Windows permission errors
+            writing_functions.write_with_temp_output(series_folder, write_all_series, write_attempts=5)
 
 
     #--------------------------------------------------------------------------
