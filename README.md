@@ -26,20 +26,22 @@ A standalone executable is available on the latest Release.
 
 ## How to use
 
-1. Open **ALM File Converter.exe** or run the code through `main.py`.
+1. Open **ALM File Converter.exe**.
 2. Choose the desired output format.
-3. Use **Batch Processing** to convert all microscopy files in a folder.
-4. Disable **Batch Processing** to convert a single file.
-5. Select the input file or folder.
-6. Wait for the conversion to finish.
-7. Converted files are saved inside a generated folder. Single-file conversions use `Converted Files`; batch conversions use `Converted Files (FORMAT)`, e.g. `Converted Files OME ZARR`.
+3. Optionally enable output compression.
+4. Optionally enable OME-Zarr pyramid levels when converting to `.ome.zarr`.
+5. Use **Batch Processing** to convert all microscopy files in a folder.
+6. Disable **Batch Processing** to convert a single file.
+7. Select the input file or folder.
+8. Wait for the conversion to finish.
+9. Converted files are saved inside the generated output folder.
 
 ## Features
 
 - Converts single microscopy files or multiple files from a folder in a batch conversion.
 - Supports lazy reading to handle large datasets (excluding only `.zvi`).
 - Supports multi-position reading in the `.lif`, `.nd2`, `.ome.tif` and `.ome.tiff` file formats.
-- Preserves voxel size, time-step, and position metadata when available.
+- Preserves voxel size, time-frame, and positional metadata when available.
 - Supports output file compression.
 - Supports pyramidal levels in OME-Zarr outputs.
 
